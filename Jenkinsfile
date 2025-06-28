@@ -4,6 +4,7 @@ pipeline {
   environment {
     VERSION_FILE = 'version.txt'         // or changelog.md, package.json, etc.
     STORED_VERSION = '.last_version.txt' // stored version from last build
+    TARGET_IP = "192.168.30.118"
   }
 
   stages {
@@ -28,7 +29,6 @@ pipeline {
             error("Version unchanged")
           } else {
             echo "New version detected: ${currentVersion}"
-            sh "ansible all -i \"192.168.30.118\" -m ping --private-key ~/.ssh/id_rsa -u hau"
             writeFile file: env.STORED_VERSION, text: currentVersion
           }
         }
@@ -38,6 +38,15 @@ pipeline {
     stage('Run Build Tasks') {
       steps {
         echo "Running tasks for new version!"
+         sshagent(['ansible-ssh-key']) {
+          sh '''
+            ansible all \
+              -i "${TARGET_IP}," \
+              -m ping \
+              -u hau \
+              --private-key $SSH_AUTH_SOCK
+          '''
+        }
         // Add actual build steps here
       }
     }
