@@ -28,6 +28,7 @@ pipeline {
             error("Version unchanged")
           } else {
             echo "New version detected: ${currentVersion}"
+            sh "ansible all -i \"192.168.30.118\" -m ping --private-key ~/.ssh/id_rsa -u hau"
             writeFile file: env.STORED_VERSION, text: currentVersion
           }
         }
