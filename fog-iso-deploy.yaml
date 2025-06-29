@@ -4,11 +4,11 @@
 
   vars:
     local_artifact_path: "./{{ artifact_name }}"
-    remote_artifact_path: "/home/hau/{{ artifact_name }}"
+    remote_artifact_path: "/home/hau/debian-custom.iso"
 
   tasks:
     - name: Copy artifact to target
-      ansible.builtin.synchronize::
+      ansible.posix.synchronize:
         src: "{{ local_artifact_path }}"
         dest: "{{ remote_artifact_path }}"
         mode: push
