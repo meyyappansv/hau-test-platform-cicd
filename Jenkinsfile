@@ -42,28 +42,30 @@ pipeline {
       when {
         expression { return env.CODE_CHANGE == 'true' }
       }
-      script {
-        def cleanedVersion = currentVersion.replace('.', '')
-        echo "Downloading the ISO file from GCP bucket"
-        def isoFileName = "debian-custom-${cleanedVersion}.iso"
-        def exeFileName = "HauApp${cleanedVersion}"
-        withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
-        sh """
-            gcloud auth activate-service-account --key-file=\"$GCP_KEY\"
-            gcloud storage cp gs://hiper_global_artifacts/${isoFileName} ${isoFileName}
-        """
-        }
-        echo "Updating ISO for FOG servers"
-         sshagent(['ansible-ssh-key']) {
-          sh '''
-            ansible all \
-              -i "${TARGET_IP}," \
-              -m ping \
-              -u hau \
-              --private-key $SSH_AUTH_SOCK
-          '''
-        }
-        
+      steps {
+            script {
+                def cleanedVersion = currentVersion.replace('.', '')
+                echo "Downloading the ISO file from GCP bucket"
+                def isoFileName = "debian-custom-${cleanedVersion}.iso"
+                def exeFileName = "HauApp${cleanedVersion}"
+                withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
+                sh """
+                    gcloud auth activate-service-account --key-file=\"$GCP_KEY\"
+                    gcloud storage cp gs://hiper_global_artifacts/${isoFileName} ${isoFileName}
+                """
+                }
+                echo "Updating ISO for FOG servers"
+                sshagent(['ansible-ssh-key']) {
+                sh '''
+                    ansible all \
+                    -i "${TARGET_IP}," \
+                    -m ping \
+                    -u hau \
+                    --private-key $SSH_AUTH_SOCK
+                '''
+                }
+                
+            }
       }
     }
   }
