@@ -64,15 +64,40 @@ pipeline {
                     // }
                     echo "Updating ISO for FOG servers"
                     sshagent(['ansible-ssh-key']) {
-                    //TODO Change this to use ansible inventory and execute an actual playbook
-                    //TODO Pass the 
+                    sh """
+                        ansible-playbook fog-iso-deploy.yaml \
+                        -i inventory.ini \
+                        -u hau \
+                        --extra-vars "artifact_name=${isoFileName}" \
+                        -vvv
+                    """
+                    } 
+            }
+        }
+    }
+
+    stage('Run EXE Update') {
+        when {
+            expression {
+            return CODE_CHANGE  
+            }
+        }
+        steps {
+                script {
+                    echo "Downloading the EXE file from GCP bucket"
+                    def cleanedVersion = CURRENT_VERSION.replace('.', '')
+                    echo "CLEANED VERSION: ${cleanedVersion}"
+                    def exeFileName = "HauApp${cleanedVersion}"
+                    echo "EXE FILENAME: ${exeFileName}"
+                    //TODO Uncomment after debugging
+                    // withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
                     // sh """
-                    //     ansible all \
-                    //     -i "${TARGET_IP}," \
-                    //     -m ping \
-                    //     -u hau \
-                    //     --private-key $SSH_AUTH_SOCK
+                    //     gcloud auth activate-service-account --key-file="\$GCP_KEY"
+                    //     gcloud storage cp gs://hiper_global_artifacts/${exeFileName} ${exeFileName}
                     // """
+                    // }
+                    echo "Updating EXE for UI servers"
+                    sshagent(['ansible-ssh-key']) {
                     sh """
                         ansible-playbook fog-iso-deploy.yaml \
                         -i inventory.ini \
