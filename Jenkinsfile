@@ -42,7 +42,7 @@ pipeline {
       when {
         expression { return env.CODE_CHANGE == 'true' }
       }
-      steps {
+      script {
         def cleanedVersion = currentVersion.replace('.', '')
         echo "Downloading the ISO file from GCP bucket"
         def isoFileName = "debian-custom-${cleanedVersion}.iso"
@@ -63,7 +63,7 @@ pipeline {
               --private-key $SSH_AUTH_SOCK
           '''
         }
-        // Add actual build steps here
+        
       }
     }
   }
