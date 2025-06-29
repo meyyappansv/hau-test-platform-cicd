@@ -41,8 +41,10 @@ pipeline {
     }
 
         stage('Run ISO Update') {
-        expression {
-          return CODE_CHANGE  
+        when {
+            expression {
+            return CODE_CHANGE  
+            }
         }
         steps {
                 script {
