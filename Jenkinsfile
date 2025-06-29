@@ -1,3 +1,4 @@
+def CODE_CHANGE = false
 pipeline {
   agent any
 
@@ -5,7 +6,6 @@ pipeline {
     VERSION_FILE = 'version.txt'         // or changelog.md, package.json, etc.
     STORED_VERSION = '.last_version.txt' // stored version from last build
     TARGET_IP = "192.168.30.118"
-    CODE_CHANGE = 'false'
     CURRENT_VERSION=''
   }
 
@@ -33,20 +33,20 @@ pipeline {
           } else {
             
             echo "New version detected: ${currentVersion}"
-            env.CODE_CHANGE = 'true'
+            CODE_CHANGE = true
             writeFile file: env.STORED_VERSION, text: currentVersion
           }
         }
       }
     }
 
-    stage('Run ISO Update') {
-      when {
-        expression { return env.CODE_CHANGE == 'true' }
-      }
-      steps {
-            script {
-                def cleanedVersion = env.CURRENT_VERSION.replace('.', '')
+        stage('Run ISO Update') {
+        expression {
+          return CODE_CHANGE  
+        }
+        steps {
+                script {
+                    def cleanedVersion = env.CURRENT_VERSION.replace('.', '')
                 echo "Downloading the ISO file from GCP bucket"
                 def isoFileName = "debian-custom-${cleanedVersion}.iso"
                 def exeFileName = "HauApp${cleanedVersion}"
