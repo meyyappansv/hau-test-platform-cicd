@@ -1,0 +1,14 @@
+- name: Copy GCS artifact to remote target
+  hosts: fog
+  become: false
+
+  vars:
+    local_artifact_path: "./{{ artifact_name }}"
+    remote_artifact_path: "/home/hau/{{ artifact_name }}"
+
+  tasks:
+    - name: Copy artifact to target
+      ansible.builtin.synchronize::
+        src: "{{ local_artifact_path }}"
+        dest: "{{ remote_artifact_path }}"
+        mode: push
