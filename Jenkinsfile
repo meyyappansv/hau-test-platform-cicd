@@ -5,7 +5,8 @@ pipeline {
     VERSION_FILE = 'version.txt'         // or changelog.md, package.json, etc.
     STORED_VERSION = '.last_version.txt' // stored version from last build
     TARGET_IP = "192.168.30.118"
-    CODE_CHANGE='false'
+    CODE_CHANGE = 'false'
+    CURRENT_VERSION=''
   }
 
   stages {
@@ -19,6 +20,7 @@ pipeline {
       steps {
         script {
           def currentVersion = readFile(env.VERSION_FILE).trim()
+          env.CURRENT_VERSION = currentVersion
           def lastVersion = fileExists(env.STORED_VERSION) ? readFile(env.STORED_VERSION).trim() : ''
 
           echo "Current version: ${currentVersion}"
@@ -44,7 +46,7 @@ pipeline {
       }
       steps {
             script {
-                def cleanedVersion = currentVersion.replace('.', '')
+                def cleanedVersion = env.CURRENT_VERSION.replace('.', '')
                 echo "Downloading the ISO file from GCP bucket"
                 def isoFileName = "debian-custom-${cleanedVersion}.iso"
                 def exeFileName = "HauApp${cleanedVersion}"
@@ -56,13 +58,13 @@ pipeline {
                 }
                 echo "Updating ISO for FOG servers"
                 sshagent(['ansible-ssh-key']) {
-                sh '''
+                sh """
                     ansible all \
                     -i "${TARGET_IP}," \
                     -m ping \
                     -u hau \
                     --private-key $SSH_AUTH_SOCK
-                '''
+                """
                 }
                 
             }
