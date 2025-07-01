@@ -54,14 +54,22 @@ pipeline {
                     echo "ISO FILENAME: ${isoFileName}"
                     def exeFileName = "HauApp${cleanedVersion}"
                     echo "EXE FILENAME: ${exeFileName}"
-                    //TODO Uncomment after debugging
-                    // withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
-                    // sh """
-                    //     gcloud auth activate-service-account --key-file="\$GCP_KEY"
-                    //     gcloud storage cp gs://hiper_global_artifacts/${isoFileName} ${isoFileName}
-                    //     gzip ${isoFileName}
-                    // """
-                    // }
+                    //TODO Check for ISO filename before downloading the ISO file
+                    if (!fileExists(isoFileName)){
+                        echo "FILE: ${isoFileName} does not exist in the control node."
+                        withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
+                            sh """
+                                gcloud auth activate-service-account --key-file="\$GCP_KEY"
+                                gcloud storage cp gs://hiper_global_artifacts/${isoFileName} ${isoFileName}
+                                gzip ${isoFileName}
+                            """
+                          }
+
+                    }
+                    else{
+                      echo "FILE: ${isoFileName} exists in the control node. Not downloading the file"
+                    }
+                    
                     echo "Updating ISO for FOG servers"
                     sshagent(['ansible-ssh-key']) {
                     sh """
@@ -90,6 +98,7 @@ pipeline {
                     def exeFileName = "HauApp${cleanedVersion}"
                     echo "EXE FILENAME: ${exeFileName}"
                     //TODO Uncomment after debugging
+                    //TODO Check if you have the ISO file locally, if not download the file
                     // withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
                     // sh """
                     //     gcloud auth activate-service-account --key-file="\$GCP_KEY"
