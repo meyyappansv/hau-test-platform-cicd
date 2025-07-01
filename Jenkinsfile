@@ -5,8 +5,7 @@ pipeline {
 
   environment {
     VERSION_FILE = 'version.txt'         // or changelog.md, package.json, etc.
-    STORED_VERSION = '.last_version.txt' // stored version from last build
-    TARGET_IP = "192.168.30.118"
+    STORED_VERSION = '.last_version.txt' // stored version from last built
   }
 
   stages {
@@ -61,7 +60,6 @@ pipeline {
                             sh """
                                 gcloud auth activate-service-account --key-file="\$GCP_KEY"
                                 gcloud storage cp gs://hiper_global_artifacts/${isoFileName} ${isoFileName}
-                                gzip ${isoFileName}
                             """
                           }
 
@@ -84,40 +82,40 @@ pipeline {
         }
     }
 
-    stage('Run EXE Update') {
-        when {
-            expression {
-            return CODE_CHANGE  
-            }
-        }
-        steps {
-                script {
-                    echo "Downloading the EXE file from GCP bucket"
-                    def cleanedVersion = CURRENT_VERSION.replace('.', '')
-                    echo "CLEANED VERSION: ${cleanedVersion}"
-                    def exeFileName = "HauApp${cleanedVersion}"
-                    echo "EXE FILENAME: ${exeFileName}"
-                    //TODO Uncomment after debugging
-                    //TODO Check if you have the ISO file locally, if not download the file
-                    // withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
-                    // sh """
-                    //     gcloud auth activate-service-account --key-file="\$GCP_KEY"
-                    //     gcloud storage cp gs://hiper_global_artifacts/${exeFileName} ${exeFileName}
-                    // """
-                    // }
-                    echo "Updating EXE for UI servers"
-                    sshagent(['ansible-ssh-key']) {
-                    sh """
-                        ansible-playbook fog-iso-deploy.yaml \
-                        -i inventory.ini \
-                        -u hau \
-                        --extra-vars "artifact_name=${isoFileName}" \
-                        -vvv
-                    """
-                    } 
-            }
-        }
-    }
+    // stage('Run EXE Update') {
+    //     when {
+    //         expression {
+    //         return CODE_CHANGE  
+    //         }
+    //     }
+    //     steps {
+    //             script {
+    //                 echo "Downloading the EXE file from GCP bucket"
+    //                 def cleanedVersion = CURRENT_VERSION.replace('.', '')
+    //                 echo "CLEANED VERSION: ${cleanedVersion}"
+    //                 def exeFileName = "HauApp${cleanedVersion}"
+    //                 echo "EXE FILENAME: ${exeFileName}"
+    //                 //TODO Uncomment after debugging
+    //                 //TODO Check if you have the ISO file locally, if not download the file
+    //                 // withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
+    //                 // sh """
+    //                 //     gcloud auth activate-service-account --key-file="\$GCP_KEY"
+    //                 //     gcloud storage cp gs://hiper_global_artifacts/${exeFileName} ${exeFileName}
+    //                 // """
+    //                 // }
+    //                 echo "Updating EXE for UI servers"
+    //                 sshagent(['ansible-ssh-key']) {
+    //                 sh """
+    //                     ansible-playbook fog-iso-deploy.yaml \
+    //                     -i inventory.ini \
+    //                     -u hau \
+    //                     --extra-vars "artifact_name=${isoFileName}" \
+    //                     -vvv
+    //                 """
+    //                 } 
+    //         }
+    //     }
+    // }
 }
 
   post {
