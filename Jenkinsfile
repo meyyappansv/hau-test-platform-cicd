@@ -38,7 +38,7 @@ pipeline {
       }
     }
       
-    stage('Run ISO Update') {
+    stage('Run ISO Update in staging') {
         when {
             expression {
             return CODE_CHANGE  
@@ -82,7 +82,7 @@ pipeline {
         }
     }
 
-    // stage('Run EXE Update') {
+    // stage('Run EXE Update in staging') {
     //     when {
     //         expression {
     //         return CODE_CHANGE  
