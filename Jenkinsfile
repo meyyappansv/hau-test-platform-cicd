@@ -8,6 +8,10 @@ pipeline {
     STORED_VERSION = '.last_version.txt' // stored version from last built
   }
 
+   parameters {
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'onsite'], description: 'Select environment to deploy to', defaultValue: 'onsite')
+    }
+
   stages {
     stage('Checkout') {
       steps {
@@ -37,50 +41,21 @@ pipeline {
         }
       }
     }
-      
-    stage('Run ISO Update in staging') {
+    //TODO Add a check here to run this stage when DEV flag is checked  
+    stage('Run ISO Update in Development') {
         when {
             expression {
-            return CODE_CHANGE  
+            return CODE_CHANGE  && params.ENVIRONMENT == 'dev'
             }
         }
         steps {
+                //TODO Move this script block to a function to be reused.
                 script {
-                    echo "Downloading the ISO file from GCP bucket"
-                    def cleanedVersion = CURRENT_VERSION.replace('.', '')
-                    echo "CLEANED VERSION: ${cleanedVersion}"
-                    def isoFileName = "debian-custom-${cleanedVersion}.iso"
-                    echo "ISO FILENAME: ${isoFileName}"
-                    def exeFileName = "HauApp${cleanedVersion}"
-                    echo "EXE FILENAME: ${exeFileName}"
-                    //TODO Check for ISO filename before downloading the ISO file
-                    if (!fileExists(isoFileName)){
-                        echo "FILE: ${isoFileName} does not exist in the control node."
-                        withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
-                            sh """
-                                gcloud auth activate-service-account --key-file="\$GCP_KEY"
-                                gcloud storage cp gs://hiper_global_artifacts/${isoFileName} ${isoFileName}
-                            """
-                          }
-
-                    }
-                    else{
-                      echo "FILE: ${isoFileName} exists in the control node. Not downloading the file"
-                    }
-                    
-                    echo "Updating ISO for FOG servers"
-                    sshagent(['ansible-ssh-key']) {
-                    sh """
-                        ansible-playbook fog-iso-deploy.yaml \
-                        -i inventory.ini \
-                        -u hau \
-                        --extra-vars "artifact_name=${isoFileName}" \
-                        -vvv
-                    """
-                    } 
+                    performISOUpdate('Development')
             }
         }
     }
+
 
     // stage('Run EXE Update in staging') {
     //     when {
@@ -123,4 +98,66 @@ pipeline {
       archiveArtifacts artifacts: '.last_version.txt', fingerprint: true
     }
   }
+}
+
+def performISOUpdate(stageName){
+
+  echo "Downloading the ISO file from GCP bucket"
+  def cleanedVersion = CURRENT_VERSION.replace('.', '')
+  echo "CLEANED VERSION: ${cleanedVersion}"
+  def isoFileName = "debian-custom-${cleanedVersion}.iso"
+  echo "ISO FILENAME: ${isoFileName}"
+  def exeFileName = "HauApp${cleanedVersion}"
+  echo "EXE FILENAME: ${exeFileName}"
+  //TODO Check for ISO filename before downloading the ISO file
+  if (!fileExists(isoFileName)){
+      echo "FILE: ${isoFileName} does not exist in the control node."
+      withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
+          sh """
+              gcloud auth activate-service-account --key-file="\$GCP_KEY"
+              gcloud storage cp gs://hiper-global-artifacts/${isoFileName} ${isoFileName}
+          """
+        }
+
+  }
+  else{
+    echo "FILE: ${isoFileName} exists in the control node. Not downloading the file"
+  }
+              
+  echo "Updating ISO for FOG servers"
+  sshagent(['ansible-ssh-key']) {
+    if(params.ENVIRONMENT == "dev"){
+
+        sh """
+            ansible-playbook fog-iso-deploy.yaml \
+            -i inventory.ini \
+            -u hau \
+            --extra-vars "artifact_name=${isoFileName}" \
+            --extra-vars "target_hosts=fog" \
+        """
+    }
+    else{
+      if (stageName == "stage"){
+
+          sh """
+            ansible-playbook fog-iso-deploy.yaml \
+            -i hiperglobal-inventory.ini \
+            -u hau \
+            --extra-vars "artifact_name=${isoFileName}" \
+            --extra-vars "target_hosts=fog,staging" \
+        """
+      }
+      else{
+          sh """
+            ansible-playbook fog-iso-deploy.yaml \
+            -i hiperglobal-inventory.ini \
+            -u hau \
+            --extra-vars "artifact_name=${isoFileName}" \
+            --extra-vars "target_hosts=fog,live" \
+        """
+      }
+      
+    }
+  } 
+
 }
