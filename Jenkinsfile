@@ -51,7 +51,7 @@ pipeline {
         steps {
                 //TODO Move this script block to a function to be reused.
                 script {
-                    performISOUpdate('Development')
+                    performISOUpdate('Development',CURRENT_VERSION)
             }
         }
     }
@@ -100,16 +100,15 @@ pipeline {
   }
 }
 
-def performISOUpdate(stageName){
+def performISOUpdate(stageName,currentVersion){
 
   echo "Downloading the ISO file from GCP bucket"
-  def cleanedVersion = CURRENT_VERSION.replace('.', '')
+  def cleanedVersion = currentVersion.replace('.', '')
   echo "CLEANED VERSION: ${cleanedVersion}"
   def isoFileName = "debian-custom-${cleanedVersion}.iso"
   echo "ISO FILENAME: ${isoFileName}"
   def exeFileName = "HauApp${cleanedVersion}"
   echo "EXE FILENAME: ${exeFileName}"
-  //TODO Check for ISO filename before downloading the ISO file
   if (!fileExists(isoFileName)){
       echo "FILE: ${isoFileName} does not exist in the control node."
       withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
