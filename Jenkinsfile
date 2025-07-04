@@ -131,7 +131,7 @@ def performISOUpdate(stageName){
         sh """
             ansible-playbook fog-iso-deploy.yaml \
             -i inventory.ini \
-            -u hau \
+            -u fog \
             --extra-vars "artifact_name=${isoFileName}" \
             --extra-vars "target_hosts=fog" \
         """
