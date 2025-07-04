@@ -9,7 +9,7 @@ pipeline {
   }
 
    parameters {
-        choice(name: 'ENVIRONMENT', choices: ['dev', 'onsite'], description: 'Select environment to deploy to', defaultValue: 'onsite')
+        choice(name: 'ENVIRONMENT', choices: ['onsite','dev'], description: 'Select environment to deploy to')
     }
 
   stages {
