@@ -1,11 +1,13 @@
 def CODE_CHANGE = false
 def CURRENT_VERSION=""
+def ROLLBACK_VERSION=""
 pipeline {
   agent any
 
   environment {
     VERSION_FILE = 'version.txt'         // or changelog.md, package.json, etc.
     STORED_VERSION = '.last_version.txt' // stored version from last built
+    ROLLBACK_VERSION_FILE = '.rollback_version.txt' // File that stores the version to rollback to
   }
 
    parameters {
@@ -24,7 +26,7 @@ pipeline {
         script {
          CURRENT_VERSION = readFile(env.VERSION_FILE).trim()
          def lastVersion = fileExists(env.STORED_VERSION) ? readFile(env.STORED_VERSION).trim() : ''
-
+         ROLLBACK_VERSION = lastVersion
           echo "Current version: ${CURRENT_VERSION}"
           echo "Last known version: ${lastVersion}"
 
@@ -36,7 +38,7 @@ pipeline {
             
             echo "New version detected: ${CURRENT_VERSION}"
             CODE_CHANGE = true
-            writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
+            
           }
         }
       }
@@ -49,7 +51,7 @@ pipeline {
             }
         }
         steps {
-                //TODO Move this script block to a function to be reused.
+                //TODO Need to add exception handling here
                 script {
                     performISOUpdate('Development',CURRENT_VERSION)
             }
@@ -91,11 +93,18 @@ pipeline {
     //         }
     //     }
     // }
+    stage('Update version files '){
+        script {
+            writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
+            writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
+        }
+    }
 }
 
   post {
     always {
       archiveArtifacts artifacts: '.last_version.txt', fingerprint: true
+      archiveArtifacts artifacts: '.rollback_version.txt', fingerprint: true
     }
   }
 }
