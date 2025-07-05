@@ -94,7 +94,7 @@ pipeline {
     //     }
     // }
     stage('Update version files '){
-        script {
+        steps {
             writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
             writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
         }
