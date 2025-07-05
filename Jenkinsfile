@@ -43,7 +43,7 @@ pipeline {
         }
       }
     }
-    //TODO Add a check here to run this stage when DEV flag is checked  
+    //TODO Add a check here to run this stage when DEV flag is checked
     stage('Run ISO Update in Development') {
         when {
             expression {
@@ -175,14 +175,16 @@ def cleanupOldISOFiles(currentVersion,rollBackVersion){
   // List all ISO files
   def cleanedCurrentVersion = currentVersion.replace('.', '')
   def cleanedRollBackVersion = rollBackVersion.replace('.','')
+  //TODO Handle scenario where there are not existing ISO files
   def isoFiles = sh(script: "ls -1t *.iso", returnStdout: true).trim().split('\n')
   def latestISOFilename = "debian-custom-${cleanedCurrentVersion}.iso"
   def rollbackISOFilename = "debian-custom-${cleanedRollBackVersion}.iso"
-
+  echo "LATEST ISO FILE NAME: ${latestISOFilename}"
+  echo "ROLLBACK ISO FILE NAME: ${rollbackISOFilename}"
   if (isoFiles.size() > 0) {
       // Loop through all except the latest
       for (int i = 0; i < isoFiles.size(); i++) {
-          if (isoFiles[i] != latestISOFilename || isoFiles[i] != rollbackISOFilename){ 
+          if (isoFiles[i] != latestISOFilename && isoFiles[i] != rollbackISOFilename){ 
             echo "Deleting old ISO: ${isoFiles[i]}"
             sh "rm -f '${isoFiles[i]}'"
           }
