@@ -1,4 +1,4 @@
-@Library('shared-library')
+@Library('hiper-global-shared-library')
 def CODE_CHANGE = false
 def CURRENT_VERSION=""
 def ROLLBACK_VERSION=""
@@ -70,7 +70,7 @@ pipeline {
         steps {
                 //TODO Need to add exception handling here
                 script {
-                    performISOUpdate('Development',CURRENT_VERSION)
+                    sharedUtils.performISOUpdate('Development',CURRENT_VERSION)
             }
         }
     }
@@ -83,7 +83,7 @@ pipeline {
         steps {
                 //TODO Need to add exception handling here
                 script {
-                    performISOUpdate('Development',ROLLBACK_VERSION)
+                    sharedUtils.performISOUpdate('Development',ROLLBACK_VERSION)
                 }
                 writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
                 cleanupRollbackISOFile(ROLLBACK_VERSION)
@@ -137,7 +137,7 @@ pipeline {
             writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
             writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
             script { 
-              cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
+              sharedUtils.cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
             }
         }
     }
