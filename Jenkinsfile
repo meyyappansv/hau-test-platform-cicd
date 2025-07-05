@@ -92,11 +92,13 @@ pipeline {
     }
 
 
-    stage('Run EXE Update in staging') {
+    stage('Run EXE Update in Development') {
       steps {
         echo "Need to add logic to update EXE"
       }
     }
+    //TODO This last stage should be executed only when both ISO and EXE update are successfull.
+    //TODO If EXE update fails then we need to rollback ISO update
     stage('Update version files and cleanup old ISO files'){
         when {
             expression {

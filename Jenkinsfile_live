@@ -93,7 +93,7 @@ pipeline {
 
     }
 
-
+    //TODO If EXE update fails for some reason the ISO update must be rolled back
     stage('Run EXE Update in staging') {
       echo "EXE update in staging"
     }
@@ -131,6 +131,11 @@ pipeline {
                     sharedUtils.performISOUpdate('Live',CURRENT_VERSION)
             }
         }
+    }
+    stage('Run EXE Update in Live'){
+      steps {
+        echo "Need to add logic for EXE update in Live"
+      }
     }
 
 
