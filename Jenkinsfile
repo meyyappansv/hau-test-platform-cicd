@@ -93,10 +93,13 @@ pipeline {
     //         }
     //     }
     // }
-    stage('Update version files '){
+    stage('Update version files and cleanup old ISO files'){
         steps {
             writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
             writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
+            script { 
+              cleanupOldISOFiles()
+            }
         }
     }
 }
@@ -166,4 +169,22 @@ def performISOUpdate(stageName,currentVersion){
     }
   } 
 
+}
+
+def cleanupOldISOFiles(){
+  // List all ISO files
+  def isoFiles = sh(script: "ls -1t *.iso", returnStdout: true).trim().split('\n')
+  def latestISOFilename = "debian-custom-${CURRENT_VERSION}.iso"
+  def rollbackISOFilename = "debian-custom-${ROLLBACK_VERSION}.iso"
+  if (isoFiles.size() > 0) {
+      // Loop through all except the latest
+      for (int i = 0; i < isoFiles.size(); i++) {
+          if (isoFiles[i] == latestISOFilename || isoFiles[i] == rollbackISOFilename){ 
+            echo "Deleting old ISO: ${oldIso}"
+            sh "rm -f '${isoFiles[i]}'"
+          }
+      }
+  } else {
+            echo "No ISO files found."
+          }
 }
