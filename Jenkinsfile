@@ -59,7 +59,6 @@ pipeline {
       }
 
     }
-    //TODO Add a check here to run this stage when DEV flag is checked
     stage('Run ISO Update') {
         when {
             expression {
@@ -73,6 +72,7 @@ pipeline {
             }
         }
     }
+    //TODO Validate the rollback
     stage('Rollback ISO Update in Development'){
       when {
             expression {
