@@ -29,7 +29,7 @@ pipeline {
         script {
          CURRENT_VERSION = readFile(env.VERSION_FILE).trim()
          LAST_VERSION = fileExists(env.STORED_VERSION) ? readFile(env.STORED_VERSION).trim() : ''
-         ROLLBACK_VERSION = fileExists(env.ROLLBACK_VERSION_FILE) ? readFile(env.ROLLBACK_VERSION_FILE).trim() : CURRENT_VERSION
+         ROLLBACK_VERSION = fileExists(env.ROLLBACK_VERSION_FILE) ? readFile(env.ROLLBACK_VERSION_FILE).trim() : ''
          echo "Current version: ${CURRENT_VERSION}"
          echo "Last known version: ${LAST_VERSION}"
          echo "Rollback Version: ${ROLLBACK_VERSION}"

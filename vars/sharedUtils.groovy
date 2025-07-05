@@ -70,9 +70,16 @@ def cleanupOldISOFiles(currentVersion,rollBackVersion){
   if (isoFiles.size() > 0) {
       // Loop through all except the latest
       for (int i = 0; i < isoFiles.size(); i++) {
-          if (isoFiles[i] != latestISOFilename && isoFiles[i] != rollbackISOFilename){ 
-            echo "Deleting old ISO: ${isoFiles[i]}"
-            sh "rm -f '${isoFiles[i]}'"
+          if (rollbackISOFilename != "debian-custom-.iso"){
+            if (isoFiles[i] != latestISOFilename && isoFiles[i] != rollbackISOFilename){ 
+              echo "Deleting old ISO: ${isoFiles[i]}"
+              sh "rm -f '${isoFiles[i]}'"
+            }
+          else {
+            if (isoFiles[i] != latestISOFilename){ 
+              echo "Deleting old ISO: ${isoFiles[i]}"
+              sh "rm -f '${isoFiles[i]}'"
+            }
           }
       }
   } else {
