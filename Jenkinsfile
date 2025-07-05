@@ -107,10 +107,19 @@ pipeline {
             }
         }
         steps {
-            writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
-            writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
+            
             script { 
-              sharedUtils.cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
+              def adjustedRollBackVersion=""
+              if (ROLLBACK_VERSION == "") {
+                echo "Rollback version is empty. Fixing it"
+                ROLLBACK_VERSION = CURRENT_VERSION
+              }
+              else {
+                echo "rollback version is not empty"
+              }
+              writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
+              writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
+                sharedUtils.cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
             }
         }
     }
