@@ -116,6 +116,8 @@ pipeline {
               }
               else {
                 echo "rollback version is not empty"
+                ROLLBACK_VERSION = LAST_VERSION
+                echo "Updated rollback version ${ROLLBACK_VERSION}"
               }
               writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
               writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
