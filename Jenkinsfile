@@ -128,6 +128,7 @@ def performISOUpdate(stageName,currentVersion){
     if(params.ENVIRONMENT == "dev"){
 
         sh """
+            ANSIBLE_HOST_KEY_CHECKING=False \
             ansible-playbook fog-iso-deploy.yaml \
             -i inventory.ini \
             --extra-vars "artifact_name=${isoFileName}" \
