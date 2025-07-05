@@ -1,6 +1,7 @@
 def CODE_CHANGE = false
 def CURRENT_VERSION=""
 def ROLLBACK_VERSION=""
+def LAST_VERSION=""
 pipeline {
   agent any
 
@@ -12,6 +13,7 @@ pipeline {
 
    parameters {
         choice(name: 'ENVIRONMENT', choices: ['onsite','dev'], description: 'Select environment to deploy to')
+        booleanParam(name: 'ROLLBACK', defaultValue: false, description: 'Check this if you want to rollback ISO & EXE deployment')
     }
 
   stages {
@@ -22,15 +24,28 @@ pipeline {
     }
 
     stage('Read Version') {
+      
       steps {
         script {
          CURRENT_VERSION = readFile(env.VERSION_FILE).trim()
-         def lastVersion = fileExists(env.STORED_VERSION) ? readFile(env.STORED_VERSION).trim() : ''
-         ROLLBACK_VERSION = lastVersion
-          echo "Current version: ${CURRENT_VERSION}"
-          echo "Last known version: ${lastVersion}"
+         LAST_VERSION = fileExists(env.STORED_VERSION) ? readFile(env.STORED_VERSION).trim() : ''
+         ROLLBACK_VERSION = fileExists(env.ROLLBACK_VERSION_FILE) ? readFile(env.ROLLBACK_VERSION_FILE).trim() : ''
+         echo "Current version: ${CURRENT_VERSION}"
+         echo "Last known version: ${LAST_VERSION}"
+         echo "Rollback Version: ${ROLLBACK_VERSION}"
+        }
+      }
+    }
+    stage('Decide if there is a code change'){
+      when {
+            expression {
+            return !params.ROLLBACK
+            }
+        }
+      steps{
 
-          if (CURRENT_VERSION == lastVersion) {
+          script {
+             if (CURRENT_VERSION == LAST_VERSION) {
             echo "No new version found. Skipping pipeline."
             currentBuild.result = 'NOT_BUILT'
             error("Version unchanged")
@@ -40,8 +55,9 @@ pipeline {
             CODE_CHANGE = true
             
           }
-        }
+          }
       }
+
     }
     //TODO Add a check here to run this stage when DEV flag is checked
     stage('Run ISO Update in Development') {
@@ -56,6 +72,23 @@ pipeline {
                     performISOUpdate('Development',CURRENT_VERSION)
             }
         }
+    }
+    stage('Rollback ISO Update in Development'){
+      when {
+            expression {
+            return params.ENVIRONMENT == 'dev' && params.ROLLBACK
+            }
+        }
+        steps {
+                //TODO Need to add exception handling here
+                script {
+                    performISOUpdate('Development',ROLLBACK_VERSION)
+                }
+                writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
+                cleanupRollbackISOFile(ROLLBACK_VERSION)
+
+        }
+
     }
 
 
@@ -94,6 +127,11 @@ pipeline {
     //     }
     // }
     stage('Update version files and cleanup old ISO files'){
+        when {
+            expression {
+            return !params.ROLLBACK
+            }
+        }
         steps {
             writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
             writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
@@ -192,4 +230,18 @@ def cleanupOldISOFiles(currentVersion,rollBackVersion){
   } else {
             echo "No ISO files found."
           }
+}
+
+def cleanupRollbackISOFile(versionToRemove){
+  // List all ISO files
+  def cleanedVersiontoRemove = versionToRemove.replace('.', '')
+  def isoFileToRemove = "debian-custom-${cleanedVersiontoRemove}.iso"
+  sh """
+      if [ -f ${isoFileToRemove} ]; then
+        echo "Deleting file..."
+        rm -f ${isoFileToRemove}
+      else
+        echo "File not found."
+      fi
+    """
 }
