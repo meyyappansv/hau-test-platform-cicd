@@ -173,14 +173,17 @@ def performISOUpdate(stageName,currentVersion){
 
 def cleanupOldISOFiles(currentVersion,rollBackVersion){
   // List all ISO files
+  def cleanedCurrentVersion = currentVersion.replace('.', '')
+  def cleanedRollBackVersion = rollBackVersion.replace('.','')
   def isoFiles = sh(script: "ls -1t *.iso", returnStdout: true).trim().split('\n')
-  def latestISOFilename = "debian-custom-${currentVersion}.iso"
-  def rollbackISOFilename = "debian-custom-${rollBackVersion}.iso"
+  def latestISOFilename = "debian-custom-${cleanedCurrentVersion}.iso"
+  def rollbackISOFilename = "debian-custom-${cleanedRollBackVersion}.iso"
+
   if (isoFiles.size() > 0) {
       // Loop through all except the latest
       for (int i = 0; i < isoFiles.size(); i++) {
-          if (isoFiles[i] == latestISOFilename || isoFiles[i] == rollbackISOFilename){ 
-            echo "Deleting old ISO: ${oldIso}"
+          if (isoFiles[i] != latestISOFilename || isoFiles[i] != rollbackISOFilename){ 
+            echo "Deleting old ISO: ${isoFiles[i]}"
             sh "rm -f '${isoFiles[i]}'"
           }
       }
