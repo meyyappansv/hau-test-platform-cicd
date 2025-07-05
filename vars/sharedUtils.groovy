@@ -75,6 +75,7 @@ def cleanupOldISOFiles(currentVersion,rollBackVersion){
               echo "Deleting old ISO: ${isoFiles[i]}"
               sh "rm -f '${isoFiles[i]}'"
             }
+          }
           else {
             if (isoFiles[i] != latestISOFilename){ 
               echo "Deleting old ISO: ${isoFiles[i]}"
