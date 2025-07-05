@@ -1,0 +1,95 @@
+def performISOUpdate(stageName,currentVersion){
+
+  echo "Downloading the ISO file from GCP bucket"
+  def cleanedVersion = currentVersion.replace('.', '')
+  echo "CLEANED VERSION: ${cleanedVersion}"
+  def isoFileName = "debian-custom-${cleanedVersion}.iso"
+  echo "ISO FILENAME: ${isoFileName}"
+  def exeFileName = "HauApp${cleanedVersion}"
+  echo "EXE FILENAME: ${exeFileName}"
+  if (!fileExists(isoFileName)){
+      echo "FILE: ${isoFileName} does not exist in the control node."
+      withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
+          sh """
+              gcloud auth activate-service-account --key-file="\$GCP_KEY"
+              gcloud storage cp gs://hiper-global-artifacts/${isoFileName} ${isoFileName}
+          """
+        }
+
+  }
+  else{
+    echo "FILE: ${isoFileName} exists in the control node. Not downloading the file"
+  }
+              
+  echo "Updating ISO for FOG servers"
+  sshagent(['ansible-ssh-key']) {
+    if(params.ENVIRONMENT == "dev"){
+
+        sh """
+            ANSIBLE_HOST_KEY_CHECKING=False \
+            ansible-playbook fog-iso-deploy.yaml \
+            -i inventory.ini \
+            --extra-vars "artifact_name=${isoFileName}" \
+            --extra-vars "target_hosts=fog" \
+        """
+    }
+    else{
+      if (stageName == "stage"){
+
+          sh """
+            ansible-playbook fog-iso-deploy.yaml \
+            -i hiperglobal-inventory.ini \
+            --extra-vars "artifact_name=${isoFileName}" \
+            --extra-vars "target_hosts=fog,staging" \
+        """
+      }
+      else{
+          sh """
+            ansible-playbook fog-iso-deploy.yaml \
+            -i hiperglobal-inventory.ini \
+            --extra-vars "artifact_name=${isoFileName}" \
+            --extra-vars "target_hosts=fog,live" \
+        """
+      }
+      
+    }
+  } 
+
+}
+
+def cleanupOldISOFiles(currentVersion,rollBackVersion){
+  // List all ISO files
+  def cleanedCurrentVersion = currentVersion.replace('.', '')
+  def cleanedRollBackVersion = rollBackVersion.replace('.','')
+  //TODO Handle scenario where there are not existing ISO files
+  def isoFiles = sh(script: "ls -1t *.iso", returnStdout: true).trim().split('\n')
+  def latestISOFilename = "debian-custom-${cleanedCurrentVersion}.iso"
+  def rollbackISOFilename = "debian-custom-${cleanedRollBackVersion}.iso"
+  echo "LATEST ISO FILE NAME: ${latestISOFilename}"
+  echo "ROLLBACK ISO FILE NAME: ${rollbackISOFilename}"
+  if (isoFiles.size() > 0) {
+      // Loop through all except the latest
+      for (int i = 0; i < isoFiles.size(); i++) {
+          if (isoFiles[i] != latestISOFilename && isoFiles[i] != rollbackISOFilename){ 
+            echo "Deleting old ISO: ${isoFiles[i]}"
+            sh "rm -f '${isoFiles[i]}'"
+          }
+      }
+  } else {
+            echo "No ISO files found."
+          }
+}
+
+def cleanupRollbackISOFile(versionToRemove){
+  // List all ISO files
+  def cleanedVersiontoRemove = versionToRemove.replace('.', '')
+  def isoFileToRemove = "debian-custom-${cleanedVersiontoRemove}.iso"
+  sh """
+      if [ -f ${isoFileToRemove} ]; then
+        echo "Deleting file..."
+        rm -f ${isoFileToRemove}
+      else
+        echo "File not found."
+      fi
+    """
+}
