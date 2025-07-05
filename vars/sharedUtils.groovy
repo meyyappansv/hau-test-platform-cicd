@@ -1,4 +1,4 @@
-def performISOUpdate(stageName,currentVersion){
+def performISOUpdate(environmentName,currentVersion){
 
   echo "Downloading the ISO file from GCP bucket"
   def cleanedVersion = currentVersion.replace('.', '')
@@ -23,7 +23,7 @@ def performISOUpdate(stageName,currentVersion){
               
   echo "Updating ISO for FOG servers"
   sshagent(['ansible-ssh-key']) {
-    if(params.ENVIRONMENT == "dev"){
+    if(environmentName == "Development"){
 
         sh """
             ANSIBLE_HOST_KEY_CHECKING=False \
@@ -34,7 +34,7 @@ def performISOUpdate(stageName,currentVersion){
         """
     }
     else{
-      if (stageName == "stage"){
+      if (environmentName == "Staging"){
 
           sh """
             ansible-playbook fog-iso-deploy.yaml \

@@ -99,6 +99,7 @@ pipeline {
     }
     //TODO This last stage should be executed only when both ISO and EXE update are successfull.
     //TODO If EXE update fails then we need to rollback ISO update
+    //TODO File update with versions should not happen in case of failures
     stage('Update version files and cleanup old ISO files'){
         when {
             expression {
