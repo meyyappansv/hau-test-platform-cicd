@@ -13,7 +13,6 @@ pipeline {
   }
 
    parameters {
-        choice(name: 'ENVIRONMENT', choices: ['onsite','dev'], description: 'Select environment to deploy to')
         booleanParam(name: 'ROLLBACK', defaultValue: false, description: 'Check this if you want to rollback ISO & EXE deployment')
     }
 
