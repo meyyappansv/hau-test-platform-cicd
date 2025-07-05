@@ -98,7 +98,7 @@ pipeline {
             writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
             writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
             script { 
-              cleanupOldISOFiles()
+              cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
             }
         }
     }
@@ -171,11 +171,11 @@ def performISOUpdate(stageName,currentVersion){
 
 }
 
-def cleanupOldISOFiles(){
+def cleanupOldISOFiles(currentVersion,rollBackVersion){
   // List all ISO files
   def isoFiles = sh(script: "ls -1t *.iso", returnStdout: true).trim().split('\n')
-  def latestISOFilename = "debian-custom-${CURRENT_VERSION}.iso"
-  def rollbackISOFilename = "debian-custom-${ROLLBACK_VERSION}.iso"
+  def latestISOFilename = "debian-custom-${currentVersion}.iso"
+  def rollbackISOFilename = "debian-custom-${rollBackVersion}.iso"
   if (isoFiles.size() > 0) {
       // Loop through all except the latest
       for (int i = 0; i < isoFiles.size(); i++) {
