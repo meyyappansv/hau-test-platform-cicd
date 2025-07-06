@@ -84,7 +84,7 @@ pipeline {
                 script {
                     sharedUtils.performISOUpdate('Development',ROLLBACK_VERSION)
                     writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
-                    sharedUtils.cleanupRollbackISOFile(ROLLBACK_VERSION)
+                    sharedUtils.cleanupRollbackISOFile(CURRENT_VERSION)
                 }
                 
 
