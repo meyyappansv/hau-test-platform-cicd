@@ -83,9 +83,10 @@ pipeline {
                 //TODO Need to add exception handling here
                 script {
                     sharedUtils.performISOUpdate('Development',ROLLBACK_VERSION)
+                    writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
+                    sharedUtils.cleanupRollbackISOFile(ROLLBACK_VERSION)
                 }
-                writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
-                cleanupRollbackISOFile(ROLLBACK_VERSION)
+                
 
         }
 
@@ -121,7 +122,7 @@ pipeline {
               }
               writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
               writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
-                sharedUtils.cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
+              sharedUtils.cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
             }
         }
     }
