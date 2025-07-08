@@ -1,5 +1,3 @@
-//Add logic hear for staging and manual approval before moving to production
-
 @Library('hiper-global-shared-library')
 def CODE_CHANGE = false
 def CURRENT_VERSION=""
@@ -8,14 +6,14 @@ def LAST_VERSION=""
 pipeline {
   agent any
 
-  environment {        // or changelog.md, package.json, etc.
-    STORED_VERSION = '.last_live_version.txt' // stored version from last built
-    ROLLBACK_VERSION_FILE = '.rollback_live_version.txt' // File that stores the version to rollback to
+  environment {
+    VERSION_FILE = 'version.txt'         // or changelog.md, package.json, etc.
+    STORED_VERSION = '.last_version.txt' // stored version from last built
+    ROLLBACK_VERSION_FILE = '.rollback_version.txt' // File that stores the version to rollback to
   }
 
    parameters {
         booleanParam(name: 'ROLLBACK', defaultValue: false, description: 'Check this if you want to rollback ISO & EXE deployment')
-        string( name: 'CODE_VERSION',defaultValue: '',description: 'Enter the code version to deploy. Version format 7.0')
     }
 
   stages {
@@ -25,17 +23,19 @@ pipeline {
       }
     }
 
-    stage("Read Code versions"){
+    stage('Read Version') {
+      
       steps {
         script {
+         CURRENT_VERSION = readFile(env.VERSION_FILE).trim()
          LAST_VERSION = fileExists(env.STORED_VERSION) ? readFile(env.STORED_VERSION).trim() : ''
          ROLLBACK_VERSION = fileExists(env.ROLLBACK_VERSION_FILE) ? readFile(env.ROLLBACK_VERSION_FILE).trim() : ''
+         echo "Current version: ${CURRENT_VERSION}"
          echo "Last known version: ${LAST_VERSION}"
          echo "Rollback Version: ${ROLLBACK_VERSION}"
         }
       }
     }
-
     stage('Decide if there is a code change'){
       when {
             expression {
@@ -45,13 +45,13 @@ pipeline {
       steps{
 
           script {
-             if (CODE_VERSION == LAST_VERSION) {
+             if (CURRENT_VERSION == LAST_VERSION) {
             echo "No new version found. Skipping pipeline."
             currentBuild.result = 'NOT_BUILT'
             error("Version unchanged")
           } else {
             
-            echo "New version detected: ${CODE_VERSION}"
+            echo "New version detected: ${CURRENT_VERSION}"
             CODE_CHANGE = true
             
           }
@@ -59,10 +59,8 @@ pipeline {
       }
 
     }
-
-    //TODO Add a check here to run this stage when DEV flag is checked
-    stage('Run ISO Update in Live') {
-       when {
+    stage('Run ISO Update') {
+        when {
             expression {
             return CODE_CHANGE
             }
@@ -70,11 +68,12 @@ pipeline {
         steps {
                 //TODO Need to add exception handling here
                 script {
-                    sharedUtils.performISOUpdate('Live',CODE_VERSION)
+                    sharedUtils.performISOUpdate('Staging',CURRENT_VERSION)
             }
         }
     }
-    stage('Rollback ISO Update in Live'){
+    //TODO Validate the rollback
+    stage('Rollback ISO Update in Staging'){
       when {
             expression {
             return  params.ROLLBACK
@@ -83,21 +82,25 @@ pipeline {
         steps {
                 //TODO Need to add exception handling here
                 script {
-                    sharedUtils.performISOUpdate('Live',ROLLBACK_VERSION)
+                    sharedUtils.performISOUpdate('Staging',ROLLBACK_VERSION)
+                    writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
+                    sharedUtils.cleanupRollbackISOFile(CURRENT_VERSION)
                 }
-                writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
-                cleanupRollbackISOFile(ROLLBACK_VERSION)
+                
 
         }
 
     }
 
-    //TODO If EXE update fails for some reason the ISO update must be rolled back
-    stage('Run EXE Update in Live') {
-      echo "EXE update in Live"
-    }
-   
 
+    stage('Run EXE Update in Development') {
+      steps {
+        echo "Need to add logic to update EXE"
+      }
+    }
+    //TODO This last stage should be executed only when both ISO and EXE update are successfull.
+    //TODO If EXE update fails then we need to rollback ISO update
+    //TODO File update with versions should not happen in case of failures
     stage('Update version files and cleanup old ISO files'){
         when {
             expression {
@@ -110,7 +113,7 @@ pipeline {
               def adjustedRollBackVersion=""
               if (ROLLBACK_VERSION == "") {
                 echo "Rollback version is empty. Fixing it"
-                ROLLBACK_VERSION = CODE_VERSION
+                ROLLBACK_VERSION = CURRENT_VERSION
               }
               else {
                 echo "rollback version is not empty"
@@ -119,16 +122,16 @@ pipeline {
               }
               writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
               writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
+              sharedUtils.cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
             }
         }
     }
-   
 }
 
   post {
     always {
-      archiveArtifacts artifacts: '.last_live_version.txt', fingerprint: true
-      archiveArtifacts artifacts: '.rollback_live_version.txt', fingerprint: true
+      archiveArtifacts artifacts: '.last_version.txt', fingerprint: true
+      archiveArtifacts artifacts: '.rollback_version.txt', fingerprint: true
     }
   }
 }
