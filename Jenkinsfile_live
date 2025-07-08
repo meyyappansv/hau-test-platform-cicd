@@ -74,6 +74,7 @@ pipeline {
             }
         }
     }
+    //We can only perform one version rollback
     stage('Rollback ISO Update in Live'){
       when {
             expression {
@@ -97,8 +98,8 @@ pipeline {
       echo "EXE update in Live"
     }
    
-
-    stage('Update version files and cleanup old ISO files'){
+    //Dont need to cleanup ISO files while deploying Live
+    stage('Update version files'){
         when {
             expression {
             return !params.ROLLBACK
@@ -117,7 +118,7 @@ pipeline {
                 ROLLBACK_VERSION = LAST_VERSION
                 echo "Updated rollback version ${ROLLBACK_VERSION}"
               }
-              writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
+              writeFile file: env.STORED_VERSION, text: CODE_VERSION
               writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
             }
         }

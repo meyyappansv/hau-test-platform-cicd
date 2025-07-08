@@ -8,8 +8,8 @@ pipeline {
 
   environment {
     VERSION_FILE = 'version.txt'         // or changelog.md, package.json, etc.
-    STORED_VERSION = '.last_version.txt' // stored version from last built
-    ROLLBACK_VERSION_FILE = '.rollback_version.txt' // File that stores the version to rollback to
+    STORED_VERSION = '.last_staging_version.txt' // stored version from last built
+    ROLLBACK_VERSION_FILE = '.rollback_staging_version.txt' // File that stores the version to rollback to
   }
 
    parameters {
