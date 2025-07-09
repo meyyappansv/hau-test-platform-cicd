@@ -103,7 +103,7 @@ def cleanupRollbackISOFile(versionToRemove){
 }
 
 def installUIPrerequisites(environmentName){
-   echo "Updating ISO for FOG servers"
+   echo "Updating EXE for FOG servers"
    sshagent(['ansible-ssh-key']) {
     if(environmentName == "Development"){
 

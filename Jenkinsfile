@@ -59,75 +59,82 @@ pipeline {
       }
 
     }
-    stage('Run ISO Update') {
+    // stage('Run ISO Update') {
+    //     when {
+    //         expression {
+    //         return CODE_CHANGE
+    //         }
+    //     }
+    //     steps {
+    //             //TODO Need to add exception handling here
+    //             script {
+    //                 sharedUtils.performISOUpdate('Development',CURRENT_VERSION)
+    //         }
+    //     }
+    // }
+    //TODO Validate the rollback
+    // stage('Rollback ISO Update in Development'){
+    //   when {
+    //         expression {
+    //         return  params.ROLLBACK
+    //         }
+    //     }
+    //     steps {
+    //             //TODO Need to add exception handling here
+    //             script {
+    //                 sharedUtils.performISOUpdate('Development',ROLLBACK_VERSION)
+    //                 writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
+    //                 sharedUtils.cleanupRollbackISOFile(CURRENT_VERSION)
+    //             }
+                
+
+    //     }
+
+    // }
+
+
+    stage('Run EXE Update in Development') {
         when {
             expression {
             return CODE_CHANGE
             }
         }
-        steps {
-                //TODO Need to add exception handling here
-                script {
-                    sharedUtils.performISOUpdate('Development',CURRENT_VERSION)
-            }
-        }
-    }
-    //TODO Validate the rollback
-    stage('Rollback ISO Update in Development'){
-      when {
-            expression {
-            return  params.ROLLBACK
-            }
-        }
-        steps {
-                //TODO Need to add exception handling here
-                script {
-                    sharedUtils.performISOUpdate('Development',ROLLBACK_VERSION)
-                    writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
-                    sharedUtils.cleanupRollbackISOFile(CURRENT_VERSION)
-                }
-                
-
-        }
-
-    }
-
-
-    stage('Run EXE Update in Development') {
       steps {
         echo "Running EXE Update"
-        sharedUtils.installUIPrerequisites('Development')
+        script {
+          sharedUtils.installUIPrerequisites('Development')
+        }
 
       }
     }
     //TODO This last stage should be executed only when both ISO and EXE update are successfull.
     //TODO If EXE update fails then we need to rollback ISO update
     //TODO File update with versions should not happen in case of failures
-    stage('Update version files and cleanup old ISO files'){
-        when {
-            expression {
-            return !params.ROLLBACK
-            }
-        }
-        steps {
+    // stage('Update version files and cleanup old ISO files'){
+    //     when {
+    //         expression {
+    //         return !params.ROLLBACK
+    //         }
+    //     }
+    //     steps {
             
-            script { 
-              def adjustedRollBackVersion=""
-              if (ROLLBACK_VERSION == "") {
-                echo "Rollback version is empty. Fixing it"
-                ROLLBACK_VERSION = CURRENT_VERSION
-              }
-              else {
-                echo "rollback version is not empty"
-                ROLLBACK_VERSION = LAST_VERSION
-                echo "Updated rollback version ${ROLLBACK_VERSION}"
-              }
-              writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
-              writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
-              sharedUtils.cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
-            }
-        }
-    }
+    //         script { 
+    //           def adjustedRollBackVersion=""
+    //           if (ROLLBACK_VERSION == "") {
+    //             echo "Rollback version is empty. Fixing it"
+    //             ROLLBACK_VERSION = CURRENT_VERSION
+    //           }
+    //           else {
+    //             echo "rollback version is not empty"
+    //             ROLLBACK_VERSION = LAST_VERSION
+    //             echo "Updated rollback version ${ROLLBACK_VERSION}"
+    //           }
+    //           writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
+    //           writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
+    //           sharedUtils.cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
+    //         }
+    //     }
+    // }
 }
 
   post {

@@ -1,6 +1,9 @@
 - name: Install dependency packages for UI
-  hosts: all
-  become: yes
+  hosts: ui
+  become: true
+  become_method: sudo
+  become_user: root
+  become_flags: '-n'
 
   vars:
     package_file: "./packages.txt"
