@@ -101,3 +101,36 @@ def cleanupRollbackISOFile(versionToRemove){
       fi
     """
 }
+
+def installUIPrerequisites(environmentName){
+   echo "Updating ISO for FOG servers"
+   sshagent(['ansible-ssh-key']) {
+    if(environmentName == "Development"){
+
+        sh """
+            ANSIBLE_HOST_KEY_CHECKING=False \
+            ansible-playbook ui-install-apt-packages.yaml \
+            -i inventory.ini \
+            --extra-vars "target_hosts=ui" \
+        """
+    }
+    else{
+      if (environmentName == "Staging"){
+
+          sh """
+            ansible-playbook ui-install-apt-packages.yaml \
+            -i hiperglobal-inventory.ini \
+            --extra-vars "target_hosts=ui,staging" \
+        """
+      }
+      else{
+          sh """
+            ansible-playbook ui-install-apt-packages.yaml \
+            -i hiperglobal-inventory.ini \
+            --extra-vars "target_hosts=ui,live" \
+        """
+      }
+      
+    }
+  } 
+}

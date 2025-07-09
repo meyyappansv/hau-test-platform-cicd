@@ -95,7 +95,9 @@ pipeline {
 
     stage('Run EXE Update in Development') {
       steps {
-        echo "Need to add logic to update EXE"
+        echo "Running EXE Update"
+        sharedUtils.installUIPrerequisites('Development')
+
       }
     }
     //TODO This last stage should be executed only when both ISO and EXE update are successfull.
