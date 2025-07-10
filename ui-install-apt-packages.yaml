@@ -6,21 +6,12 @@
   become_flags: '-n'
 
   vars:
-    package_file: "./packages.txt"
+    packages: "{{ lookup('file', './packages.txt').splitlines() }}"
 
   tasks:
-    - name: Read package list from file
-      ansible.builtin.slurp:
-        src: "{{ package_file }}"
-      register: package_list_raw
-
-    - name: Set package list as array
-      set_fact:
-        package_list: "{{ package_list_raw['content'] | b64decode | splitlines() }}"
-
     - name: Install packages from list
       ansible.builtin.apt:
-        name: "{{ package_list }}"
+        name: "{{ packages }}"
         state: present
         update_cache: yes
     
