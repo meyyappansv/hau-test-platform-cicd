@@ -40,7 +40,7 @@ def performISOUpdate(environmentName,currentVersion){
             ansible-playbook fog-iso-deploy.yaml \
             -i hiperglobal-inventory.ini \
             --extra-vars "artifact_name=${isoFileName}" \
-            --extra-vars "target_hosts=fog,staging" \
+            --extra-vars "target_hosts=fogstaging" \
         """
       }
       else{
@@ -48,7 +48,7 @@ def performISOUpdate(environmentName,currentVersion){
             ansible-playbook fog-iso-deploy.yaml \
             -i hiperglobal-inventory.ini \
             --extra-vars "artifact_name=${isoFileName}" \
-            --extra-vars "target_hosts=fog,live" \
+            --extra-vars "target_hosts=foglive" \
         """
       }
       
@@ -120,14 +120,14 @@ def installUIPrerequisites(environmentName){
           sh """
             ansible-playbook ui-install-apt-packages.yaml \
             -i hiperglobal-inventory.ini \
-            --extra-vars "target_hosts=ui,staging" \
+            --extra-vars "target_hosts=uistaging" \
         """
       }
       else{
           sh """
             ansible-playbook ui-install-apt-packages.yaml \
             -i hiperglobal-inventory.ini \
-            --extra-vars "target_hosts=ui,live" \
+            --extra-vars "target_hosts=uilive" \
         """
       }
       
