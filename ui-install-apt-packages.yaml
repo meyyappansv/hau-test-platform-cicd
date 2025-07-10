@@ -9,6 +9,9 @@
     packages: "{{ lookup('file', './packages.txt').splitlines() }}"
 
   tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
     - name: Install packages from list
       ansible.builtin.apt:
         name: "{{ packages }}"
