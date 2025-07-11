@@ -18,6 +18,13 @@
         dest: "/home/hau/Desktop"
         mode: push
     
+    - name: Mark HAU launcher as trusted by Gnome
+      command: gio set /home/hau/Desktop/my-app.desktop "metadata::trusted" true
+      become: false
+      environment:
+        DISPLAY: ":0"
+        XAUTHORITY: "/home/hau/.Xauthority"
+    
     - name: Copy the BHAU app icon
       ansible.posix.synchronize:
         src: "files/app_icon.jpg"
