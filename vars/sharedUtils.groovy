@@ -135,7 +135,7 @@ def installUIPrerequisites(environmentName){
   } 
 }
 
-def performEXEUpdate() {
+def performEXEUpdate(environmentName) {
   echo "Downloading the EXE file from GCP bucket"
   def cleanedVersion = currentVersion.replace('.', '')
   echo "CLEANED VERSION: ${cleanedVersion}"
