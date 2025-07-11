@@ -103,7 +103,7 @@ pipeline {
         echo "Running EXE Update"
         script {
           sharedUtils.installUIPrerequisites('Development')
-          sharedUtils.performEXEUpdate('Development')
+          sharedUtils.performEXEUpdate('Development',CURRENT_VERSION)
         }
 
       }
