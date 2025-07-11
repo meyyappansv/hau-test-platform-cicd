@@ -37,13 +37,13 @@
         name: python3-pip
         state: present
 
-    - name: Upgrade pip packages
-      ansible.builtin.pip:
-        name:
-          - gdown
-          - google-cloud-storage
-        state: latest
-        executable: pip3
+    # - name: Upgrade pip packages
+    #   ansible.builtin.pip:
+    #     name:
+    #       - gdown
+    #       - google-cloud-storage
+    #     state: latest
+    #     executable: pip3
     
     - name: Ensure LD_PRELOAD is set in .bashrc
       ansible.builtin.lineinfile:

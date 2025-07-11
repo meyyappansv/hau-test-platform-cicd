@@ -134,3 +134,58 @@ def installUIPrerequisites(environmentName){
     }
   } 
 }
+
+def performEXEUpdate() {
+  echo "Downloading the EXE file from GCP bucket"
+  def cleanedVersion = currentVersion.replace('.', '')
+  echo "CLEANED VERSION: ${cleanedVersion}"
+  def exeFileName = "HauApp${cleanedVersion}"
+  echo "EXE FILENAME: ${exeFileName}"
+  if (!fileExists(exeFileName)){
+      echo "FILE: ${exeFileName} does not exist in the control node."
+      withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
+          sh """
+              gcloud auth activate-service-account --key-file="\$GCP_KEY"
+              gcloud storage cp gs://hiper-global-artifacts/${exeFileName} ${exeFileName}
+          """
+        }
+
+  }
+  else{
+    echo "FILE: ${exeFileName} exists in the control node. Not downloading the file"
+  }
+
+  echo "Updating EXE for user laptops"
+  sshagent(['ansible-ssh-key']) {
+    if(environmentName == "Development"){
+
+        sh """
+            ANSIBLE_HOST_KEY_CHECKING=False \
+            ansible-playbook ui-exe-deploy.yaml \
+            -i inventory.ini \
+            --extra-vars "artifact_name=${exeFileName}" \
+            --extra-vars "target_hosts=ui" \
+        """
+    }
+    else{
+      if (environmentName == "Staging"){
+
+          sh """
+            ansible-playbook ui-exe-deploy.yaml \
+            -i hiperglobal-inventory.ini \
+            --extra-vars "artifact_name=${exeFileName}" \
+            --extra-vars "target_hosts=uistaging" \
+        """
+      }
+      else{
+          sh """
+            ansible-playbook ui-exe-deploy.yam \
+            -i hiperglobal-inventory.ini \
+            --extra-vars "artifact_name=${exeFileName}" \
+            --extra-vars "target_hosts=uilive" \
+        """
+      }
+      
+    }
+  } 
+}

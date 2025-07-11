@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Terminal=true
+Name=TestUtility
+Icon=/home/hau/Desktop/app_icon.jpg
+Exec=gnome-terminal -e "bash -c '/home/hau/hauwrapper.sh;$SHELL'"
+Categories=Application;
