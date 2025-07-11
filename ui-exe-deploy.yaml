@@ -12,6 +12,12 @@
         src: "{{ local_artifact_path }}"
         dest: "{{ remote_exe_artifact_path }}"
         mode: push
+    
+    - name: Set executable permission on copied artifact
+      ansible.builtin.file:
+        path: "{{ remote_exe_artifact_path }}/HauApp"
+        mode: '0755'
+        state: file
 
     - name: Copy the HAU desktop config file
       ansible.posix.synchronize:
