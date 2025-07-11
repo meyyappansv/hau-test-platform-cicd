@@ -15,11 +15,11 @@
     - name: Copy the HAU desktop config file
       ansible.posix.synchronize:
         src: "files/Hau.desktop"
-        dest: "{{ /home/hau/Desktop }}"
+        dest: "/home/hau/Desktop"
         mode: push
     
     - name: Copy the BHAU app icon
       ansible.posix.synchronize:
         src: "files/app_icon.jpg"
-        dest: "{{ /home/hau/Desktop }}"
+        dest: "/home/hau/Desktop"
         mode: push
