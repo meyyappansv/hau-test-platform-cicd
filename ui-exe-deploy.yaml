@@ -15,7 +15,7 @@
     
     - name: Set executable permission on copied artifact
       ansible.builtin.file:
-        path: "{{ remote_exe_artifact_path }}/HauApp"
+        path: "{{ remote_exe_artifact_path }}"
         mode: '0755'
         state: file
 
