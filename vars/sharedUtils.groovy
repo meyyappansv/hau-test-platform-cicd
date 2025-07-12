@@ -20,7 +20,7 @@ def performISOUpdate(environmentName,currentVersion){
       catch (Exception e) {
         //Issue with getting ISO from google cloud bucket
         echo "Issue with getting ISO from google cloud bucket"
-        return [status: 'ERROR', message: "Issue with getting ISO from google cloud bucket"]
+        return [status: 'ERROR', message: "Issue with getting ${isoFileName} from google cloud bucket"]
       }
 
   }
@@ -161,7 +161,7 @@ def installUIPrerequisites(environmentName){
           echo "Exit status: ${result.status}"
 
           if (result.status != 0) {
-            return [status: 'ERROR', message: "Issue with insalling prerequisite packages in the UI machines"]
+            return [status: 'ERROR', message: "Issue with installing prerequisite packages in the UI machines"]
           }
 
     }
@@ -176,12 +176,19 @@ def performEXEUpdate(environmentName,currentVersion) {
   echo "EXE FILENAME: ${exeFileName}"
   if (!fileExists(exeFileName)){
       echo "FILE: ${exeFileName} does not exist in the control node."
-      withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
-          sh """
-              gcloud auth activate-service-account --key-file="\$GCP_KEY"
-              gcloud storage cp gs://hiper-global-artifacts/${exeFileName} ${exeFileName}
-          """
-        }
+      try {
+        withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
+            sh """
+                gcloud auth activate-service-account --key-file="\$GCP_KEY"
+                gcloud storage cp gs://hiper-global-artifacts/${exeFileName} ${exeFileName}
+            """
+          }
+      }
+      catch (Exception e) {
+          echo "Issue with getting ${exeFileName} from google cloud bucket"
+        return [status: 'ERROR', message: "Issue with getting  ${exeFileName} from google cloud bucket"]
+      }
+
 
   }
   else{
@@ -189,10 +196,10 @@ def performEXEUpdate(environmentName,currentVersion) {
   }
 
   echo "Updating EXE for user laptops"
-  sshagent(['ansible-ssh-key']) {
-    if(environmentName == "Development"){
+  def exeUpdateCommand = ""
+  if(environmentName == "Development"){
 
-        sh """
+        exeUpdateCommand ="""
             ANSIBLE_HOST_KEY_CHECKING=False \
             ansible-playbook ui-exe-deploy.yaml \
             -i inventory.ini \
@@ -200,18 +207,17 @@ def performEXEUpdate(environmentName,currentVersion) {
             --extra-vars "target_hosts=ui" \
         """
     }
-    else{
-      if (environmentName == "Staging"){
+    else if (environmentName == "Staging"){
 
-          sh """
+          exeUpdateCommand = """
             ansible-playbook ui-exe-deploy.yaml \
             -i hiperglobal-inventory.ini \
             --extra-vars "artifact_name=${exeFileName}" \
             --extra-vars "target_hosts=uistaging" \
         """
       }
-      else{
-          sh """
+    else{
+          exeUpdateCommand = """
             ansible-playbook ui-exe-deploy.yam \
             -i hiperglobal-inventory.ini \
             --extra-vars "artifact_name=${exeFileName}" \
@@ -219,9 +225,18 @@ def performEXEUpdate(environmentName,currentVersion) {
         """
       }
       
+       sshagent(['ansible-ssh-key']) {
+        def result = runCommand(exeUpdateCommand)
+        echo "Output:\n${result.output}"
+        echo "Exit status: ${result.status}"
+
+        if (result.status != 0) {
+            return [status: 'ERROR', message: "Issue with installing EXE in the UI machines"]
+        }
+      } 
     }
-  } 
-}
+ 
+
 
 def sendEmailNotification(messageType,emailBody){
   def subject=""
