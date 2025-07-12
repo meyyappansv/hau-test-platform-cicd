@@ -9,12 +9,19 @@ def performISOUpdate(environmentName,currentVersion){
   echo "EXE FILENAME: ${exeFileName}"
   if (!fileExists(isoFileName)){
       echo "FILE: ${isoFileName} does not exist in the control node."
-      withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
-          sh """
-              gcloud auth activate-service-account --key-file="\$GCP_KEY"
-              gcloud storage cp gs://hiper-global-artifacts/${isoFileName} ${isoFileName}
-          """
-        }
+      try {
+        withCredentials([file(credentialsId: 'jenkins-service-account-key', variable: 'GCP_KEY')]) {
+            sh """
+                gcloud auth activate-service-account --key-file="\$GCP_KEY"
+                gcloud storage cp gs://hiper-global-artifacts/${isoFileName} ${isoFileName}
+            """
+          }
+      }
+      catch (Exception e) {
+        //Issue with getting ISO from google cloud bucket
+        echo "Issue with getting ISO from google cloud bucket"
+        return false
+      }
 
   }
   else{

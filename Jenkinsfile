@@ -27,7 +27,15 @@ pipeline {
       
       steps {
         script {
-         CURRENT_VERSION = readFile(env.VERSION_FILE).trim()
+        //TODO Test this exception scenario
+        try {
+            CURRENT_VERSION = readFile(env.VERSION_FILE).trim()
+        } 
+        catch (Exception e) {
+          echo "Failed to read version file: ${e.getMessage()}"
+          CURRENT_VERSION = "unknown"  // or set a default/fallback value
+          error("Not able to find out the incoming version.")
+         }
          LAST_VERSION = fileExists(env.STORED_VERSION) ? readFile(env.STORED_VERSION).trim() : ''
          ROLLBACK_VERSION = fileExists(env.ROLLBACK_VERSION_FILE) ? readFile(env.ROLLBACK_VERSION_FILE).trim() : ''
          echo "Current version: ${CURRENT_VERSION}"
@@ -47,8 +55,8 @@ pipeline {
           script {
              if (CURRENT_VERSION == LAST_VERSION) {
             echo "No new version found. Skipping pipeline."
-            currentBuild.result = 'NOT_BUILT'
-            error("Version unchanged")
+            currentBuild.result = 'ABORTED'
+            return
           } else {
             
             echo "New version detected: ${CURRENT_VERSION}"
@@ -68,7 +76,10 @@ pipeline {
         steps {
                 //TODO Need to add exception handling here
                 script {
-                    sharedUtils.performISOUpdate('Development',CURRENT_VERSION)
+                    def isoUpdateResult = sharedUtils.performISOUpdate('Development',CURRENT_VERSION)
+                    if (!isoUpdateResult){
+                      error("Issue with getting ISO file for version ${CURRENT_VERSION} from google cloud")
+                    }
             }
         }
     }
@@ -139,9 +150,24 @@ pipeline {
 }
 
   post {
-    always {
-      archiveArtifacts artifacts: '.last_version.txt', fingerprint: true
-      archiveArtifacts artifacts: '.rollback_version.txt', fingerprint: true
+    
+    success {
+    mail to: "${env.EMAIL_RECIPIENTS}",
+         subject: "✅ Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+         body: "Build succeeded.\n\n${env.BUILD_URL}"
     }
+
+  failure {
+    mail to: "${env.EMAIL_RECIPIENTS}",
+         subject: "❌ Failure: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+         body: "Build failed.\n\nCheck logs: ${env.BUILD_URL}"
+    }
+
+  aborted {
+    mail to: "${env.EMAIL_RECIPIENTS}",
+         subject: "⚠️ Aborted: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+         body: "Build was aborted.\n\n${env.BUILD_URL}"
+    }
+
   }
 }
