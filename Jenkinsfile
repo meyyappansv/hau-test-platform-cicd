@@ -34,7 +34,7 @@ pipeline {
         catch (Exception e) {
           echo "Failed to read version file: ${e.getMessage()}"
           CURRENT_VERSION = "unknown"  // or set a default/fallback value
-          sharedUtils.sendEmailNotification("Failed to read version file: ${e.getMessage()}")
+          sharedUtils.sendEmailNotification("error","Failed to read version file: ${e.getMessage()}")
           error("Not able to find out the incoming version.")
          }
          LAST_VERSION = fileExists(env.STORED_VERSION) ? readFile(env.STORED_VERSION).trim() : ''
@@ -56,6 +56,7 @@ pipeline {
           script {
              if (CURRENT_VERSION == LAST_VERSION) {
             echo "No new version found. Skipping pipeline."
+            sharedUtils.sendEmailNotification("abort","No new version found for update")
             currentBuild.result = 'ABORTED'
             return
           } else {
@@ -151,31 +152,12 @@ pipeline {
 }
 
   post {
-    
     success {
     emailext(
         to: "${env.EMAIL_RECIPIENTS}",
         from: 'jenkins@ehaven.co',
          subject: "✅ Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
          body: "Build succeeded.\n\n${env.BUILD_URL}"
-    )
-    }
-
-  // failure {
-  //   emailext(
-  //        to: "${env.EMAIL_RECIPIENTS}",
-  //        from: 'jenkins@ehaven.co',
-  //        subject: "❌ Failure: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-  //        body: "Build failed.\n\nCheck logs: ${env.BUILD_URL}"
-  //   )
-  //   }
-
-  aborted {
-    emailext(
-         to: "${env.EMAIL_RECIPIENTS}",
-         from: 'jenkins@ehaven.co',
-         subject: "⚠️ Aborted: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-         body: "Build was aborted.\n\n${env.BUILD_URL}"
     )
     }
 

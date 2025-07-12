@@ -197,11 +197,22 @@ def performEXEUpdate(environmentName,currentVersion) {
   } 
 }
 
-def sendEmailNotification(emailBody){
+def sendEmailNotification(messageType,emailBody){
+  def subject=""
+  def body=""
+  if (messageType == "error"){
+    subject = "❌ Failure: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+    body = "Build failed.\n\nCheck logs: ${env.BUILD_URL} \n BUILD ERROR: ${emailBody}"
+  }
+  else if(messageType == "abort"){
+    subject = "⚠️ Aborted: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+    body = "Build was aborted.\n\n${env.BUILD_URL} BUILD ERROR: ${emailBody}"
+  }
+ 
   emailext(
          to: "${env.EMAIL_RECIPIENTS}",
          from: 'jenkins@ehaven.co',
-         subject: "❌ Failure: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-         body: "Build failed.\n\nCheck logs: ${env.BUILD_URL} \n BUILD ERROR: ${emailBody}"
+         subject: "${subject}",
+         body: "${body}"
     )
 }
