@@ -31,7 +31,7 @@ pipeline {
             CURRENT_VERSION = readFile(env.VERSION_FILE).trim()
         } 
         catch (Exception e) {
-          echo "Failed to read version file: ${e.getMessage()}"
+          echo "Failed to read version file: ${e.getMessage()}" 
           CURRENT_VERSION = "unknown"  // or set a default/fallback value
           sharedUtils.sendEmailNotification("error","Failed to read version file: ${e.getMessage()}Check if the version.txt file exists in git repo")
           error("Not able to find out the incoming version.")
@@ -116,14 +116,19 @@ pipeline {
       steps {
         echo "Running EXE Update"
         script {
-          def prerequisitesUpdateStatus = sharedUtils.installUIPrerequisites('Development')
-          if (prerequisitesUpdateStatus.status == "ERROR")
-          {
-            sharedUtils.sendEmailNotification("error","${prerequisitesUpdateStatus.message}")
-            error("Error in installing UI server prerequisite packages: ${prerequisitesUpdateStatus.message}")
-          }
+          //TODO Uncomment this after simulating EXE update exception.
+          // def prerequisitesUpdateStatus = sharedUtils.installUIPrerequisites('Development')
+          // if (prerequisitesUpdateStatus.status == "ERROR")
+          // {
+          //   sharedUtils.sendEmailNotification("error","${prerequisitesUpdateStatus.message}")
+          //   error("Error in installing UI server prerequisite packages: ${prerequisitesUpdateStatus.message}")
+          // }
           //TODO Add exception for installing the EXE file
-          sharedUtils.performEXEUpdate('Development',CURRENT_VERSION)
+          def exeUpdateStatus = sharedUtils.performEXEUpdate('Development',CURRENT_VERSION)
+          if (exeUpdateStatus.status == "ERROR"){
+            sharedUtils.sendEmailNotification("error","${exeUpdateStatus.message}")
+            error("Error in installing EXE UI server: ${exeUpdateStatus.message}")
+          }
         }
 
       }
