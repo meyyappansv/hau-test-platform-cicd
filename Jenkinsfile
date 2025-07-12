@@ -34,7 +34,7 @@ pipeline {
         catch (Exception e) {
           echo "Failed to read version file: ${e.getMessage()}"
           CURRENT_VERSION = "unknown"  // or set a default/fallback value
-          sharedUtils.sendEmailNotification("error","Failed to read version file: ${e.getMessage()}")
+          sharedUtils.sendEmailNotification("error","Failed to read version file: ${e.getMessage()}Check if the version.txt file exists in git repo")
           error("Not able to find out the incoming version.")
          }
          LAST_VERSION = fileExists(env.STORED_VERSION) ? readFile(env.STORED_VERSION).trim() : ''
