@@ -152,21 +152,30 @@ pipeline {
   post {
     
     success {
-    mail to: "${env.EMAIL_RECIPIENTS}",
+    emailext(
+        to: "${env.EMAIL_RECIPIENTS}",
+        from: 'jenkins@ehaven.co',
          subject: "✅ Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
          body: "Build succeeded.\n\n${env.BUILD_URL}"
+    )
     }
 
   failure {
-    mail to: "${env.EMAIL_RECIPIENTS}",
+    emailext(
+         to: "${env.EMAIL_RECIPIENTS}",
+         from: 'jenkins@ehaven.co',
          subject: "❌ Failure: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
          body: "Build failed.\n\nCheck logs: ${env.BUILD_URL}"
+    )
     }
 
   aborted {
-    mail to: "${env.EMAIL_RECIPIENTS}",
+    emailext(
+         to: "${env.EMAIL_RECIPIENTS}",
+         from: 'jenkins@ehaven.co',
          subject: "⚠️ Aborted: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
          body: "Build was aborted.\n\n${env.BUILD_URL}"
+    )
     }
 
   }
