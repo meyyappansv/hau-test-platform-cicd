@@ -59,19 +59,19 @@ pipeline {
       }
 
     }
-    // stage('Run ISO Update') {
-    //     when {
-    //         expression {
-    //         return CODE_CHANGE
-    //         }
-    //     }
-    //     steps {
-    //             //TODO Need to add exception handling here
-    //             script {
-    //                 sharedUtils.performISOUpdate('Development',CURRENT_VERSION)
-    //         }
-    //     }
-    // }
+    stage('Run ISO Update') {
+        when {
+            expression {
+            return CODE_CHANGE
+            }
+        }
+        steps {
+                //TODO Need to add exception handling here
+                script {
+                    sharedUtils.performISOUpdate('Development',CURRENT_VERSION)
+            }
+        }
+    }
     //TODO Validate the rollback
     // stage('Rollback ISO Update in Development'){
     //   when {
