@@ -20,7 +20,7 @@ def performISOUpdate(environmentName,currentVersion){
       catch (Exception e) {
         //Issue with getting ISO from google cloud bucket
         echo "Issue with getting ISO from google cloud bucket"
-        return false
+        return [status: 'ERROR', message: "Issue with getting ISO from google cloud bucket"]
       }
 
   }
@@ -29,10 +29,10 @@ def performISOUpdate(environmentName,currentVersion){
   }
               
   echo "Updating ISO for FOG servers"
-  sshagent(['ansible-ssh-key']) {
-    if(environmentName == "Development"){
+  def cmd = ""
+  if(environmentName == "Development"){
 
-        sh """
+        cmd = """
             ANSIBLE_HOST_KEY_CHECKING=False \
             ansible-playbook fog-iso-deploy.yaml \
             -i inventory.ini \
@@ -40,29 +40,47 @@ def performISOUpdate(environmentName,currentVersion){
             --extra-vars "target_hosts=fog" \
         """
     }
-    else{
-      if (environmentName == "Staging"){
+    else if (environmentName == "Staging"){
 
-          sh """
+          cmd =  """
             ansible-playbook fog-iso-deploy.yaml \
             -i hiperglobal-inventory.ini \
             --extra-vars "artifact_name=${isoFileName}" \
             --extra-vars "target_hosts=fogstaging" \
         """
       }
-      else{
-          sh """
+    else{
+          cmd =  """
             ansible-playbook fog-iso-deploy.yaml \
             -i hiperglobal-inventory.ini \
             --extra-vars "artifact_name=${isoFileName}" \
             --extra-vars "target_hosts=foglive" \
         """
       }
+    
+      sshagent(['ansible-ssh-key']) {
+        def result = runCommand(cmd)
+          echo "Output:\n${result.output}"
+          echo "Exit status: ${result.status}"
+
+          if (result.status != 0) {
+            return [status: 'ERROR', message: "Issue with performing ISO update"]
+          }
+      } 
       
     }
-  } 
 
+def runCommand(String cmd) {
+    // Wrap the command to capture output and status in one pass
+  // ensure the command doesn't cause pipeline-level failure
+  def status = sh(script: "${cmd} > cmd.out 2>&1", returnStatus: true)
+  def output = readFile('cmd.out').trim()
+  echo "Exit code: ${status} — output:\n${output}"
+  return [status: status,output: output ]
 }
+
+
+
 
 def cleanupOldISOFiles(currentVersion,rollBackVersion){
   // List all ISO files

@@ -27,7 +27,6 @@ pipeline {
       
       steps {
         script {
-        //TODO Test this exception scenario
         try {
             CURRENT_VERSION = readFile(env.VERSION_FILE).trim()
         } 
@@ -79,8 +78,9 @@ pipeline {
                 //TODO Need to add exception handling here
                 script {
                     def isoUpdateResult = sharedUtils.performISOUpdate('Development',CURRENT_VERSION)
-                    if (!isoUpdateResult){
-                      error("Issue with getting ISO file for version ${CURRENT_VERSION} from google cloud")
+                    if (isoUpdateResult.status == "ERROR"){
+                      sharedUtils.sendEmailNotification("error","${isoUpdateResult.message}")
+                      error("ISO UPDATE ERROR: ${isoUpdateResult.message}")
                     }
             }
         }
