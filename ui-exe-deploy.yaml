@@ -5,8 +5,31 @@
   vars:
     local_artifact_path: "./{{ artifact_name }}"
     remote_exe_artifact_path: "/home/hau/HauApp"
+    folder_list:
+      - /home/hau/config
+      - /home/hau/output_files
+      - /home/hau/log
+    config_file_list:
+      - default_configs.json
+      - servers.csv
+      - parameter_template.csv
 
   tasks:
+    - name: Create folders from list
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: "hau"
+        group: "hau"
+      loop: "{{ folder_list }}"
+
+    - name: Create config files
+      ansible.posix.synchronize:
+        src: "files/{{ item }}"
+        dest: "/home/hau/config/{{ item }}"
+      loop: "{{ config_file_list }}"
+
     - name: Copy artifact to target
       ansible.posix.synchronize:
         src: "{{ local_artifact_path }}"
