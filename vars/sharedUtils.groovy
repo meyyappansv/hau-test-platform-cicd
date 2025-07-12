@@ -196,3 +196,12 @@ def performEXEUpdate(environmentName,currentVersion) {
     }
   } 
 }
+
+def sendEmailNotification(emailBody){
+  emailext(
+         to: "${env.EMAIL_RECIPIENTS}",
+         from: 'jenkins@ehaven.co',
+         subject: "❌ Failure: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+         body: "Build failed.\n\nCheck logs: ${env.BUILD_URL} \n BUILD ERROR: ${emailBody}"
+    )
+}

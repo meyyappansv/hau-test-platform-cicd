@@ -34,6 +34,7 @@ pipeline {
         catch (Exception e) {
           echo "Failed to read version file: ${e.getMessage()}"
           CURRENT_VERSION = "unknown"  // or set a default/fallback value
+          sharedUtils.sendEmailNotification("Failed to read version file: ${e.getMessage()}")
           error("Not able to find out the incoming version.")
          }
          LAST_VERSION = fileExists(env.STORED_VERSION) ? readFile(env.STORED_VERSION).trim() : ''
@@ -160,14 +161,14 @@ pipeline {
     )
     }
 
-  failure {
-    emailext(
-         to: "${env.EMAIL_RECIPIENTS}",
-         from: 'jenkins@ehaven.co',
-         subject: "❌ Failure: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-         body: "Build failed.\n\nCheck logs: ${env.BUILD_URL}"
-    )
-    }
+  // failure {
+  //   emailext(
+  //        to: "${env.EMAIL_RECIPIENTS}",
+  //        from: 'jenkins@ehaven.co',
+  //        subject: "❌ Failure: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+  //        body: "Build failed.\n\nCheck logs: ${env.BUILD_URL}"
+  //   )
+  //   }
 
   aborted {
     emailext(
