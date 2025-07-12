@@ -1,13 +1,13 @@
-- name: Install dependency packages for UI
-  hosts: ui
-  become: true
+- name: Copy GCS artifact to remote target
+  hosts: "{{ target_hosts }}"
+  become: yes
   become_method: sudo
   become_user: root
   become_flags: '-n'
 
   vars:
-    packages: "{{ lookup('file', './packages.txt').splitlines() }}"
-
+    local_artifact_path: "./{{ artifact_name }}"
+    remote_artifact_path: "/tftpboot/hau/linux/debian.iso"
   tasks:
     - name: Simulate failure with custom message
       ansible.builtin.fail:

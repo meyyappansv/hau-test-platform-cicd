@@ -129,36 +129,44 @@ def cleanupRollbackISOFile(versionToRemove){
 
 def installUIPrerequisites(environmentName){
    echo "Updating EXE for FOG servers"
-   sshagent(['ansible-ssh-key']) {
-    if(environmentName == "Development"){
+   def installPrereqCommand = ""
+   if(environmentName == "Development"){
 
-        sh """
+        installPrereqCommand = """
             ANSIBLE_HOST_KEY_CHECKING=False \
             ansible-playbook ui-install-apt-packages.yaml \
             -i inventory.ini \
             --extra-vars "target_hosts=ui" \
         """
     }
-    else{
-      if (environmentName == "Staging"){
+    else if (environmentName == "Staging"){
 
-          sh """
+          installPrereqCommand =  """
             ansible-playbook ui-install-apt-packages.yaml \
             -i hiperglobal-inventory.ini \
             --extra-vars "target_hosts=uistaging" \
         """
       }
-      else{
-          sh """
+    else{
+          installPrereqCommand =  """
             ansible-playbook ui-install-apt-packages.yaml \
             -i hiperglobal-inventory.ini \
             --extra-vars "target_hosts=uilive" \
         """
-      }
-      
+    }
+
+   sshagent(['ansible-ssh-key']) {
+        def result = runCommand(installPrereqCommand)
+        echo "Output:\n${result.output}"
+          echo "Exit status: ${result.status}"
+
+          if (result.status != 0) {
+            return [status: 'ERROR', message: "Issue with insalling prerequisite packages in the UI machines"]
+          }
+
     }
   } 
-}
+
 
 def performEXEUpdate(environmentName,currentVersion) {
   echo "Downloading the EXE file from GCP bucket"

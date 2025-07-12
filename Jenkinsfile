@@ -68,23 +68,24 @@ pipeline {
       }
 
     }
-    stage('Run ISO Update') {
-        when {
-            expression {
-            return CODE_CHANGE
-            }
-        }
-        steps {
-                //TODO Need to add exception handling here
-                script {
-                    def isoUpdateResult = sharedUtils.performISOUpdate('Development',CURRENT_VERSION)
-                    if (isoUpdateResult.status == "ERROR"){
-                      sharedUtils.sendEmailNotification("error","${isoUpdateResult.message}")
-                      error("ISO UPDATE ERROR: ${isoUpdateResult.message}")
-                    }
-            }
-        }
-    }
+    //TODO Uncomment after testing UI exception handling
+    // stage('Run ISO Update') {
+    //     when {
+    //         expression {
+    //         return CODE_CHANGE
+    //         }
+    //     }
+    //     steps {
+                
+    //             script {
+    //                 def isoUpdateResult = sharedUtils.performISOUpdate('Development',CURRENT_VERSION)
+    //                 if (isoUpdateResult.status == "ERROR"){
+    //                   sharedUtils.sendEmailNotification("error","${isoUpdateResult.message}")
+    //                   error("ISO UPDATE ERROR: ${isoUpdateResult.message}")
+    //                 }
+    //         }
+    //     }
+    // }
     //TODO Validate the rollback
     // stage('Rollback ISO Update in Development'){
     //   when {
@@ -115,7 +116,13 @@ pipeline {
       steps {
         echo "Running EXE Update"
         script {
-          sharedUtils.installUIPrerequisites('Development')
+          def prerequisitesUpdateStatus = sharedUtils.installUIPrerequisites('Development')
+          if (prerequisitesUpdateStatus.status == "ERROR")
+          {
+            sharedUtils.sendEmailNotification("error","${prerequisitesUpdateStatus.message}")
+            error("Error in installing UI server prerequisite packages: ${prerequisitesUpdateStatus.message}")
+          }
+          //TODO Add exception for installing the EXE file
           sharedUtils.performEXEUpdate('Development',CURRENT_VERSION)
         }
 

@@ -8,7 +8,88 @@
   vars:
     local_artifact_path: "./{{ artifact_name }}"
     remote_artifact_path: "/tftpboot/hau/linux/debian.iso"
+
   tasks:
-    - name: Simulate failure with custom message
+    #Stop the NFS server
+    - name: Stop NFS kernel server
+      ansible.builtin.service:
+        name: nfs-kernel-server
+        state: stopped
+    - name: Kill processes using mountpoint
+      ansible.builtin.shell: fuser -km /tftpboot/hau/linux/debian/10 || true
+      become: yes
+
+    #Unmount file system
+    - name: Unmount /tftpboot/hau/linux/debian/10 if mounted
+      ansible.builtin.mount:
+        path: /tftpboot/hau/linux/debian/10
+        state: unmounted
+      become: yes
+      ignore_errors: yes
+    #Remove exploded ISO directory
+    - name: Remove exploded folder
+      ansible.builtin.file:
+        path: /tftpboot/hau/linux/debian/10
+        state: absent
+      become: yes
+
+    ##Remove the ISO file
+    - name: Remove old ISO file
+      ansible.builtin.file:
+        path: /tftpboot/hau/linux/debian.iso
+        state: absent
+      become: yes  # Optional, use if file needs root permissions
+
+
+    #Copy the new ISO file
+    - name: Copy artifact to target
+      ansible.posix.synchronize:
+        src: "{{ local_artifact_path }}"
+        dest: "{{ remote_artifact_path }}"
+        mode: push
+
+
+    #Create new exploded folder and explode the new ISO
+    - name: Create new exploded folder
+      ansible.builtin.file:
+        path: /tftpboot/hau/linux/debian/10
+        state: directory
+        mode: '0755'
+      become: yes
+
+    #Mount the file systems that are defined in 
+    - name: Mount ISO on /tftpboot/hau/linux/debian/10
+      ansible.builtin.mount:
+        path: /tftpboot/hau/linux/debian/10
+        src: /tftpboot/hau/linux/debian.iso
+        fstype: iso9660
+        opts: loop,ro
+        state: mounted
+      become: yes
+
+    #Check the mounted file system
+    - name: Check if /tftpboot/hau/linux/debian/10 is accessible (mounted)
+      ansible.builtin.command: ls -lash /tftpboot/hau/linux/debian/10/
+      register: ls_result
+      ignore_errors: yes
+      become: yes
+
+    - name: Fail if mount point is not accessible
       ansible.builtin.fail:
-        msg: "❌ Simulated error: aborting as requested"
+        msg: "Not able to mount the ISO file at /tftpboot/hau/linux/debian/10/"
+      when: ls_result.rc != 0
+
+    #Restart the NFS server
+    - name: Start NFS kernel server
+      ansible.builtin.service:
+        name: nfs-kernel-server
+        state: started
+      become: yes
+
+
+    #Remove the known_hosts file to remove any conflicting host keys
+    - name: Cleanup know_hosts file
+      ansible.builtin.file:
+        path: /home/hau/.ssh/known_hosts
+        state: absent
+      become: yes  # Optional, use if file needs root permissions
