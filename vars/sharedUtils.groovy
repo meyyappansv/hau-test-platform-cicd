@@ -202,11 +202,11 @@ def sendEmailNotification(messageType,emailBody){
   def body=""
   if (messageType == "error"){
     subject = "❌ Failure: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-    body = "Build failed.\n\nCheck logs: ${env.BUILD_URL} \n BUILD ERROR: ${emailBody}"
+    body = "Build failed. Check logs here: ${env.BUILD_URL}\nBUILD ERROR: ${emailBody}"
   }
   else if(messageType == "abort"){
     subject = "⚠️ Aborted: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-    body = "Build was aborted.\n\n${env.BUILD_URL} BUILD ERROR: ${emailBody}"
+    body = "Build was aborted. ${env.BUILD_URL}\nBUILD ERROR: ${emailBody}"
   }
  
   emailext(
