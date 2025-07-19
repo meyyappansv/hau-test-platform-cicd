@@ -3,6 +3,7 @@ def CODE_CHANGE = false
 def CURRENT_VERSION=""
 def ROLLBACK_VERSION=""
 def LAST_VERSION=""
+def ISO_UPDATE_STATUS="failed"
 pipeline {
   agent any
 
@@ -84,6 +85,7 @@ pipeline {
                       error("ISO UPDATE ERROR: ${isoUpdateResult.message}")
                     }
                     else{
+                      ISO_UPDATE_STATUS="success"
                       sharedUtils.sendEmailNotification("success","ISO VERSION UPDATED TO ${CURRENT_VERSION}")
                     }
             }
@@ -108,17 +110,16 @@ pipeline {
 
     }
 
-
+    //We dont want to treat EXE update failure as a total failure scenario, as there might be a case where a laptop is not connected to network
     stage('Run EXE Update in Development') {
         when {
             expression {
-            return CODE_CHANGE
+            return CODE_CHANGE && ISO_UPDATE_STATUS == "success"
             }
         }
       steps {
         echo "Running EXE Update"
         script {
-          //TODO Uncomment this after simulating EXE update exception.
           //Do not need to rollback the ISO update if there are issues with EXE updates
           def prerequisitesUpdateStatus = sharedUtils.installUIPrerequisites('Development')
           if (prerequisitesUpdateStatus.status == "ERROR")
@@ -129,7 +130,6 @@ pipeline {
           else{
             echo "Installing UI server prerequisite packages completed successfully"
           }
-          //TODO Add exception for installing the EXE file
           def exeUpdateStatus = sharedUtils.performEXEUpdate('Development',CURRENT_VERSION)
           if (exeUpdateStatus.status == "ERROR"){
             sharedUtils.sendEmailNotification("error","${exeUpdateStatus.message}")
@@ -145,43 +145,32 @@ pipeline {
     //TODO This last stage should be executed only when both ISO and EXE update are successfull.
     //TODO If EXE update fails then we need to rollback ISO update
     //TODO File update with versions should not happen in case of failures
-    // stage('Update version files and cleanup old ISO files'){
-    //     when {
-    //         expression {
-    //         return !params.ROLLBACK
-    //         }
-    //     }
-    //     steps {
+    stage('Update version files and cleanup old ISO files'){
+        when {
+            expression {
+            return !params.ROLLBACK
+            }
+        }
+        steps {
             
-    //         script { 
-    //           def adjustedRollBackVersion=""
-    //           if (ROLLBACK_VERSION == "") {
-    //             echo "Rollback version is empty. Fixing it"
-    //             ROLLBACK_VERSION = CURRENT_VERSION
-    //           }
-    //           else {
-    //             echo "rollback version is not empty"
-    //             ROLLBACK_VERSION = LAST_VERSION
-    //             echo "Updated rollback version ${ROLLBACK_VERSION}"
-    //           }
-    //           writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
-    //           writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
-    //           sharedUtils.cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
-    //         }
-    //     }
-    // }
+            script { 
+              def adjustedRollBackVersion=""
+              if (ROLLBACK_VERSION == "") {
+                echo "Rollback version is empty. Fixing it"
+                ROLLBACK_VERSION = CURRENT_VERSION
+              }
+              else {
+                echo "rollback version is not empty"
+                ROLLBACK_VERSION = LAST_VERSION
+                echo "Updated rollback version ${ROLLBACK_VERSION}"
+              }
+              writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
+              writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
+              sharedUtils.cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
+            }
+        }
+    }
 }
 
-  //TODO check wether i need a post section for my pipeline
-  // post {
-  //   success {
-  //   emailext(
-  //       to: "${env.EMAIL_RECIPIENTS}",
-  //       from: 'jenkins@ehaven.co',
-  //        subject: "✅ Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-  //        body: "Build succeeded.\n\n${env.BUILD_URL}"
-  //   )
-  //   }
-
-  // }
+ 
 }
