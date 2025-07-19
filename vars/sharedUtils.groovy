@@ -252,6 +252,10 @@ def sendEmailNotification(messageType,emailBody){
     subject = "⚠️ Aborted: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
     body = "Build was aborted. ${env.BUILD_URL}\nBUILD INFO: ${emailBody}"
   }
+  else {
+    subject = "✅ Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+    body = "Build succeeded. ${env.BUILD_URL}\nBUILD INFO: ${emailBody}"
+  }
  
   emailext(
          to: "${env.EMAIL_RECIPIENTS}",

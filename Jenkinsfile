@@ -83,6 +83,9 @@ pipeline {
                       sharedUtils.sendEmailNotification("error","${isoUpdateResult.message}")
                       error("ISO UPDATE ERROR: ${isoUpdateResult.message}")
                     }
+                    else{
+                      sharedUtils.sendEmailNotification("success","ISO VERSION UPDATED TO ${CURRENT_VERSION}")
+                    }
             }
         }
     }
@@ -162,15 +165,16 @@ pipeline {
     // }
 }
 
-  post {
-    success {
-    emailext(
-        to: "${env.EMAIL_RECIPIENTS}",
-        from: 'jenkins@ehaven.co',
-         subject: "✅ Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-         body: "Build succeeded.\n\n${env.BUILD_URL}"
-    )
-    }
+  //TODO check wether i need a post section for my pipeline
+  // post {
+  //   success {
+  //   emailext(
+  //       to: "${env.EMAIL_RECIPIENTS}",
+  //       from: 'jenkins@ehaven.co',
+  //        subject: "✅ Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+  //        body: "Build succeeded.\n\n${env.BUILD_URL}"
+  //   )
+  //   }
 
-  }
+  // }
 }
