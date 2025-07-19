@@ -3,15 +3,13 @@ def CODE_CHANGE = false
 def CURRENT_VERSION=""
 def ROLLBACK_VERSION=""
 def LAST_VERSION=""
-def ISO_UPDATE=false
-def EXE_UPDATE=false
 pipeline {
   agent any
 
   environment {
     VERSION_FILE = 'version.txt'         // or changelog.md, package.json, etc.
-    ISO_STORED_VERSION = '.iso_last_version.txt' // stored version from last built
-    ISO_ROLLBACK_VERSION_FILE = '.iso_rollback_version.txt' // File that stores the version to rollback to
+    STORED_VERSION = '.last_version.txt' // stored version from last built
+    ROLLBACK_VERSION_FILE = '.rollback_version.txt' // File that stores the version to rollback to
   }
 
    parameters {
@@ -30,16 +28,7 @@ pipeline {
       steps {
         script {
         try {
-            def versionInfo = readFile(env.VERSION_FILE).trim()
-            echo "Version Info; ${versionInfo}"
-            def items = versionInfo.split(",")
-            CURRENT_VERSION = items[0]
-            if (items[1]){
-              ISO_UPDATE = true
-            }
-            if (items[2]){
-              EXE_UPDATE =true
-            }
+            CURRENT_VERSION = readFile(env.VERSION_FILE).trim()
         } 
         catch (Exception e) {
           echo "Failed to read version file: ${e.getMessage()}" 
@@ -83,7 +72,7 @@ pipeline {
     stage('Run ISO Update') {
         when {
             expression {
-            return CODE_CHANGE && ISO_UPDATE
+            return CODE_CHANGE
             }
         }
         steps {
@@ -123,7 +112,7 @@ pipeline {
     stage('Run EXE Update in Development') {
         when {
             expression {
-            return CODE_CHANGE && EXE_UPDATE
+            return CODE_CHANGE
             }
         }
       steps {
