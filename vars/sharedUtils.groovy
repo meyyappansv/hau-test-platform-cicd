@@ -166,6 +166,9 @@ def installUIPrerequisites(environmentName){
           if (result.status != 0) {
             return [status: 'ERROR', message: "Issue with installing prerequisite packages in the UI machines"]
           }
+          else {
+            return [status: 'SUCCESS', message: "EXE prerequisite packages successfully"]
+          }
 
     }
   } 
@@ -236,6 +239,9 @@ def performEXEUpdate(environmentName,currentVersion) {
         if (result.status != 0) {
             return [status: 'ERROR', message: "Issue with installing EXE in the UI machines"]
         }
+          else {
+            return [status: 'SUCCESS', message: "EXE was updated successfully"]
+          }
       } 
     }
  

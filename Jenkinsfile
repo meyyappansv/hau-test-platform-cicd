@@ -109,32 +109,39 @@ pipeline {
     }
 
 
-    // stage('Run EXE Update in Development') {
-    //     when {
-    //         expression {
-    //         return CODE_CHANGE
-    //         }
-    //     }
-    //   steps {
-    //     echo "Running EXE Update"
-    //     script {
-    //       //TODO Uncomment this after simulating EXE update exception.
-    //       // def prerequisitesUpdateStatus = sharedUtils.installUIPrerequisites('Development')
-    //       // if (prerequisitesUpdateStatus.status == "ERROR")
-    //       // {
-    //       //   sharedUtils.sendEmailNotification("error","${prerequisitesUpdateStatus.message}")
-    //       //   error("Error in installing UI server prerequisite packages: ${prerequisitesUpdateStatus.message}")
-    //       // }
-    //       //TODO Add exception for installing the EXE file
-    //       def exeUpdateStatus = sharedUtils.performEXEUpdate('Development',CURRENT_VERSION)
-    //       if (exeUpdateStatus.status == "ERROR"){
-    //         sharedUtils.sendEmailNotification("error","${exeUpdateStatus.message}")
-    //         error("Error in installing EXE UI server: ${exeUpdateStatus.message}")
-    //       }
-    //     }
+    stage('Run EXE Update in Development') {
+        when {
+            expression {
+            return CODE_CHANGE
+            }
+        }
+      steps {
+        echo "Running EXE Update"
+        script {
+          //TODO Uncomment this after simulating EXE update exception.
+          //Do not need to rollback the ISO update if there are issues with EXE updates
+          def prerequisitesUpdateStatus = sharedUtils.installUIPrerequisites('Development')
+          if (prerequisitesUpdateStatus.status == "ERROR")
+          {
+            sharedUtils.sendEmailNotification("error","${prerequisitesUpdateStatus.message}")
+            error("Error in installing UI server prerequisite packages: ${prerequisitesUpdateStatus.message}")
+          }
+          else{
+            echo "Installing UI server prerequisite packages completed successfully"
+          }
+          //TODO Add exception for installing the EXE file
+          def exeUpdateStatus = sharedUtils.performEXEUpdate('Development',CURRENT_VERSION)
+          if (exeUpdateStatus.status == "ERROR"){
+            sharedUtils.sendEmailNotification("error","${exeUpdateStatus.message}")
+            error("Error in installing EXE UI server: ${exeUpdateStatus.message}")
+          }
+          else {
+              sharedUtils.sendEmailNotification("success","EXE VERSION UPDATED TO ${CURRENT_VERSION}")
+          }
+        }
 
-    //   }
-    // }
+      }
+    }
     //TODO This last stage should be executed only when both ISO and EXE update are successfull.
     //TODO If EXE update fails then we need to rollback ISO update
     //TODO File update with versions should not happen in case of failures
