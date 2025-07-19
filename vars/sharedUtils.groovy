@@ -66,6 +66,9 @@ def performISOUpdate(environmentName,currentVersion){
           if (result.status != 0) {
             return [status: 'ERROR', message: "Issue with performing ISO update"]
           }
+          else {
+            return [status: 'SUCCESS', message: "ISO update performed successfully"]
+          }
       } 
       
     }
