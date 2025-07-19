@@ -116,6 +116,37 @@ def cleanupOldISOFiles(currentVersion,rollBackVersion){
           }
 }
 
+def cleanupOldExeFiles(currentVersion,rollBackVersion){
+  // List all ISO files
+  def cleanedCurrentVersion = currentVersion.replace('.', '')
+  def cleanedRollBackVersion = rollBackVersion.replace('.','')
+  //TODO Handle scenario where there are not existing ISO files
+  def exeFiles = sh(script: "ls -1t HauApp*", returnStdout: true).trim().split('\n')
+  def latestEXEFilename = "HauApp${cleanedCurrentVersion}"
+  def rollbackEXEFilename = "HauApp${cleanedRollBackVersion}"
+  echo "LATEST EXE FILE NAME: ${latestEXEFilename}"
+  echo "ROLLBACK EXE FILE NAME: ${rollbackEXEFilename}"
+  if (exeFiles.size() > 0) {
+      // Loop through all except the latest
+      for (int i = 0; i < exeFiles.size(); i++) {
+          if (rollbackEXEFilename != "HauApp"){
+            if (exeFiles[i] != latestEXEFilename && exeFiles[i] != rollbackEXEFilename){ 
+              echo "Deleting old ISO: ${exeFiles[i]}"
+              sh "rm -f '${exeFiles[i]}'"
+            }
+          }
+          else {
+            if (exeFiles[i] != latestEXEFilename){ 
+              echo "Deleting old ISO: ${exeFiles[i]}"
+              sh "rm -f '${exeFiles[i]}'"
+            }
+          }
+      }
+  } else {
+            echo "No EXE files found."
+          }
+}
+
 def cleanupRollbackISOFile(versionToRemove){
   // List all ISO files
   def cleanedVersiontoRemove = versionToRemove.replace('.', '')

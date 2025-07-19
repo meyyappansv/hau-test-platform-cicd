@@ -167,6 +167,7 @@ pipeline {
               writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
               writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
               sharedUtils.cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
+              sharedUtils.cleanupOldExeFiles(CURRENT_VERSION,ROLLBACK_VERSION)
             }
         }
     }
