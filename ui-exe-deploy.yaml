@@ -1,5 +1,5 @@
 - name: Copy GCS artifact to remote target
-  hosts: ui
+  hosts: "{{ target_hosts }}"
   become: false
 
   vars:

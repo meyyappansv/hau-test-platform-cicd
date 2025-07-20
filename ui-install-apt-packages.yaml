@@ -1,5 +1,5 @@
 - name: Install dependency packages for UI
-  hosts: ui
+  hosts: "{{ target_hosts }}"
   become: true
   become_method: sudo
   become_user: root
