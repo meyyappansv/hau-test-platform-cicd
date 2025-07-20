@@ -172,6 +172,7 @@ pipeline {
                     }
                     else {
                         writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
+                        writeFile file: env.LIVE_VERSION_FILE, text: ROLLBACK_VERSION
                         sharedUtils.sendEmailNotification("success","EXE VERSION ROLLED BACK TO ${ROLLBACK_VERSION}")
                     }
                 }
