@@ -4,6 +4,7 @@ def CURRENT_VERSION=""
 def ROLLBACK_VERSION=""
 def LAST_VERSION=""
 def ISO_UPDATE_STATUS="failed"
+def ISO_ROLLBACK_STATUS = "failed"
 pipeline {
   agent any
 
@@ -92,24 +93,6 @@ pipeline {
             }
         }
     }
-    stage('Rollback ISO Update in Staging'){
-      when {
-            expression {
-            return  params.ROLLBACK
-            }
-        }
-        steps {
-                //TODO Need to add exception handling here
-                script {
-                    sharedUtils.performISOUpdate('Staging',ROLLBACK_VERSION)
-                    writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
-                    sharedUtils.cleanupRollbackISOFile(CURRENT_VERSION)
-                }
-                
-
-        }
-
-    }
 
     //We dont want to treat EXE update failure as a total failure scenario, as there might be a case where a laptop is not connected to network
     stage('Run EXE Update in Staging') {
@@ -143,9 +126,62 @@ pipeline {
 
       }
     }
-    //TODO This last stage should be executed only when both ISO and EXE update are successfull.
-    //TODO If EXE update fails then we need to rollback ISO update
-    //TODO File update with versions should not happen in case of failures
+
+    stage('Rollback ISO Update in Staging'){
+      when {
+            expression {
+            return  params.ROLLBACK
+            }
+        }
+        steps {
+                //TODO Need to add exception handling here
+                script {
+                    def isoRollbackResult = sharedUtils.performISOUpdate('Staging',ROLLBACK_VERSION)
+                    if (isoRollbackResult.status == "ERROR"){
+                      sharedUtils.sendEmailNotification("error","${isoRollbackResult.message}")
+                      error("ISO ROLLBACK ERROR: ${isoRollbackResult.message}")
+                    }
+                    else{
+                      ISO_ROLLBACK_STATUS="success"
+                      writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
+                      sharedUtils.cleanupRollbackISOFile(CURRENT_VERSION)
+                      sharedUtils.sendEmailNotification("success","ISO VERSION ROLLED BACK TO ${CURRENT_VERSION}")
+                    }
+                    
+                    
+                }
+                
+
+        }
+
+    }
+
+     stage('Rollback EXE Update in Staging'){
+      when {
+            expression {
+            return  params.ROLLBACK && ISO_ROLLBACK_STATUS == "success"
+            }
+        }
+        steps {
+                //TODO Need to add exception handling here
+                script {
+                    def exeRollbackStatus = sharedUtils.performEXEUpdate('Staging',ROLLBACK_VERSION)
+                    if (exeRollbackStatus.status == "ERROR"){
+                      sharedUtils.sendEmailNotification("error","${exeRollbackStatus.message}")
+                      error("Error in installing EXE UI server: ${exeRollbackStatus.message}")
+                    }
+                    else {
+                        writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
+                        sharedUtils.sendEmailNotification("success","EXE VERSION ROLLED BACK TO ${ROLLBACK_VERSION}")
+                    }
+                }
+                
+
+        }
+
+    }
+
+    
     stage('Update version files and cleanup old ISO files'){
         when {
             expression {
