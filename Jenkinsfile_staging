@@ -12,7 +12,7 @@ pipeline {
     VERSION_FILE = 'version.txt'         // or changelog.md, package.json, etc.
     STORED_VERSION = '.last_staging_version.txt' // stored version from last built
     ROLLBACK_VERSION_FILE = '.rollback_staging_version.txt' // File that stores the version to rollback to
-    LIVE_VERSION_FILE = '.last_live_version.txt'
+    LIVE_VERSION_FILE = '.live_version.txt'
   }
 
    parameters {
@@ -206,6 +206,7 @@ pipeline {
               //TODO Add logic here to update the production rollout version.
               writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
               writeFile file: env.LIVE_VERSION_FILE, text: CURRENT_VERSION
+              archiveArtifacts artifacts: env.LIVE_VERSION_FILE
               sharedUtils.cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
               sharedUtils.cleanupOldExeFiles(CURRENT_VERSION,ROLLBACK_VERSION)
             }
