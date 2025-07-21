@@ -9,9 +9,9 @@ pipeline {
   agent any
 
   environment {
-    STORED_VERSION = '.last_live_version.txt' // stored version from last built
     ROLLBACK_VERSION_FILE = '.rollback_live_version.txt' // File that stores the version to rollback to
     LIVE_VERSION_FILE = '.live_version.txt'
+    STORED_VERSION = '.last_live_version.txt'
   }
 
    parameters {
@@ -28,9 +28,10 @@ pipeline {
     stage('Read Version') {
       
       steps {
+        copyArtifacts(projectName: 'deploy-test-platform-staging', selector: lastSuccessful())
         script {
         try {
-            CURRENT_VERSION = readFile(env.LIVE_VERSION_FILE).trim()
+            CURRENT_VERSION = readFile(".live_version.txt").trim()
         } 
         catch (Exception e) {
           echo "Failed to read version file: ${e.getMessage()}" 
