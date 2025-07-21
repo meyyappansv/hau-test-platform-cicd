@@ -1,14 +1,67 @@
 - name: Copy GCS artifact to remote target
-  hosts: ui
+  hosts: "{{ target_hosts }}"
   become: false
 
   vars:
     local_artifact_path: "./{{ artifact_name }}"
-    remote_artifact_path: "/home/hau/Desktop/HauApp"
+    remote_exe_artifact_path: "/home/hau/HauApp"
+    folder_list:
+      - /home/hau/config
+      - /home/hau/output_files
+      - /home/hau/log
+    config_file_list:
+      - default_configs.json
+      - servers.csv
+      - parameter_template.csv
 
   tasks:
+    - name: Create folders from list
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: "hau"
+        group: "hau"
+      loop: "{{ folder_list }}"
+
+    - name: Create config files
+      ansible.posix.synchronize:
+        src: "files/{{ item }}"
+        dest: "/home/hau/config/{{ item }}"
+      loop: "{{ config_file_list }}"
+
     - name: Copy artifact to target
       ansible.posix.synchronize:
         src: "{{ local_artifact_path }}"
-        dest: "{{ remote_artifact_path }}"
+        dest: "{{ remote_exe_artifact_path }}"
+        mode: push
+    
+    - name: Set executable permission on copied artifact
+      ansible.builtin.file:
+        path: "{{ remote_exe_artifact_path }}"
+        mode: '0755'
+        state: file
+
+    - name: Copy the HAU desktop config file
+      ansible.posix.synchronize:
+        src: "files/Hau.desktop"
+        dest: "/home/hau/Desktop"
+        mode: push
+    - name: Copy the hauwrapper.sh script
+      ansible.posix.synchronize:
+        src: "files/hauwrapper.sh"
+        dest: "/home/hau"
+        mode: push
+    
+    - name: Mark HAU launcher as trusted by Gnome
+      command: gio set /home/hau/Desktop/Hau.desktop "metadata::trusted" true
+      become: false
+      environment:
+        DISPLAY: ":0"
+        XAUTHORITY: "/home/hau/.Xauthority"
+    
+    - name: Copy the BHAU app icon
+      ansible.posix.synchronize:
+        src: "files/app_icon.jpg"
+        dest: "/home/hau/Desktop"
         mode: push

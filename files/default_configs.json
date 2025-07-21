@@ -1,0 +1,7 @@
+{
+  "fogserverip": "192.168.30.118",
+  "cpuloadthreshold": "100",
+  "write_hd_threshold": "50000",
+  "read_hd_threshold": "130000"
+
+}

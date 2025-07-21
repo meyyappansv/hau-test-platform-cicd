@@ -1,26 +1,20 @@
 - name: Install dependency packages for UI
-  hosts: ui
+  hosts: "{{ target_hosts }}"
   become: true
   become_method: sudo
   become_user: root
   become_flags: '-n'
 
   vars:
-    package_file: "./packages.txt"
+    packages: "{{ lookup('file', './packages.txt').splitlines() }}"
 
   tasks:
-    - name: Read package list from file
-      ansible.builtin.slurp:
-        src: "{{ package_file }}"
-      register: package_list_raw
-
-    - name: Set package list as array
-      set_fact:
-        package_list: "{{ package_list_raw['content'] | b64decode | splitlines() }}"
-
+    - name: Update apt cache
+      apt:
+        update_cache: yes
     - name: Install packages from list
       ansible.builtin.apt:
-        name: "{{ package_list }}"
+        name: "{{ packages }}"
         state: present
         update_cache: yes
     
@@ -43,13 +37,13 @@
         name: python3-pip
         state: present
 
-    - name: Upgrade pip packages
-      ansible.builtin.pip:
-        name:
-          - gdown
-          - google-cloud-storage
-        state: latest
-        executable: pip3
+    # - name: Upgrade pip packages
+    #   ansible.builtin.pip:
+    #     name:
+    #       - gdown
+    #       - google-cloud-storage
+    #     state: latest
+    #     executable: pip3
     
     - name: Ensure LD_PRELOAD is set in .bashrc
       ansible.builtin.lineinfile:

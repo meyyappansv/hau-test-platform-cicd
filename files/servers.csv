@@ -1,0 +1,2 @@
+model,reportname,ip,cpu_baseline,mem_baseline,write_hd_baseline,read_hd_baseline,gpu_clock_baseline,gpu_temp_baseline
+s21,,192.68.30.12,100,100,50000,130000,1000,100

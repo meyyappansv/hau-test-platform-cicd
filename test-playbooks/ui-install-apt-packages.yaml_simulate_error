@@ -1,0 +1,14 @@
+- name: Install dependency packages for UI
+  hosts: ui
+  become: true
+  become_method: sudo
+  become_user: root
+  become_flags: '-n'
+
+  vars:
+    packages: "{{ lookup('file', './packages.txt').splitlines() }}"
+
+  tasks:
+    - name: Simulate failure with custom message
+      ansible.builtin.fail:
+        msg: "❌ Simulated error: aborting as requested"

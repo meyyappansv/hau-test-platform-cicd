@@ -1,0 +1,4 @@
+Model,CPUTempBaseline,MemoryTempBaseline,WriteHDBaseline,ReadHDBaseline,GPUClockBaseline,GPUTempBaseline
+s421,100,100,70000,1000,100
+s422,30,30,50000,1000,100
+s423,100,100,50000,1000,100

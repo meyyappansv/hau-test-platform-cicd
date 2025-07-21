@@ -3,6 +3,8 @@ def CODE_CHANGE = false
 def CURRENT_VERSION=""
 def ROLLBACK_VERSION=""
 def LAST_VERSION=""
+def ISO_UPDATE_STATUS="failed"
+def ISO_ROLLBACK_STATUS = "failed"
 pipeline {
   agent any
 
@@ -27,7 +29,15 @@ pipeline {
       
       steps {
         script {
-         CURRENT_VERSION = readFile(env.VERSION_FILE).trim()
+        try {
+            CURRENT_VERSION = readFile(env.VERSION_FILE).trim()
+        } 
+        catch (Exception e) {
+          echo "Failed to read version file: ${e.getMessage()}" 
+          CURRENT_VERSION = "unknown"  // or set a default/fallback value
+          sharedUtils.sendEmailNotification("error","Failed to read version file: ${e.getMessage()} Check if the version.txt file exists in git repo")
+          error("Not able to find out the incoming version.")
+         }
          LAST_VERSION = fileExists(env.STORED_VERSION) ? readFile(env.STORED_VERSION).trim() : ''
          ROLLBACK_VERSION = fileExists(env.ROLLBACK_VERSION_FILE) ? readFile(env.ROLLBACK_VERSION_FILE).trim() : ''
          echo "Current version: ${CURRENT_VERSION}"
@@ -47,8 +57,9 @@ pipeline {
           script {
              if (CURRENT_VERSION == LAST_VERSION) {
             echo "No new version found. Skipping pipeline."
-            currentBuild.result = 'NOT_BUILT'
-            error("Version unchanged")
+            sharedUtils.sendEmailNotification("abort","No new version found for update")
+            currentBuild.result = 'ABORTED'
+            return
           } else {
             
             echo "New version detected: ${CURRENT_VERSION}"
@@ -59,88 +70,143 @@ pipeline {
       }
 
     }
-    // stage('Run ISO Update') {
-    //     when {
-    //         expression {
-    //         return CODE_CHANGE
-    //         }
-    //     }
-    //     steps {
-    //             //TODO Need to add exception handling here
-    //             script {
-    //                 sharedUtils.performISOUpdate('Development',CURRENT_VERSION)
-    //         }
-    //     }
-    // }
-    //TODO Validate the rollback
-    // stage('Rollback ISO Update in Development'){
-    //   when {
-    //         expression {
-    //         return  params.ROLLBACK
-    //         }
-    //     }
-    //     steps {
-    //             //TODO Need to add exception handling here
-    //             script {
-    //                 sharedUtils.performISOUpdate('Development',ROLLBACK_VERSION)
-    //                 writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
-    //                 sharedUtils.cleanupRollbackISOFile(CURRENT_VERSION)
-    //             }
-                
-
-    //     }
-
-    // }
-
-
-    stage('Run EXE Update in Development') {
+    //TODO Uncomment after testing UI exception handling
+    stage('Run ISO Update') {
         when {
             expression {
             return CODE_CHANGE
             }
         }
+        steps {
+                
+                script {
+                    def isoUpdateResult = sharedUtils.performISOUpdate('Development',CURRENT_VERSION)
+                    if (isoUpdateResult.status == "ERROR"){
+                      sharedUtils.sendEmailNotification("error","${isoUpdateResult.message}")
+                      error("ISO UPDATE ERROR: ${isoUpdateResult.message}")
+                    }
+                    else{
+                      ISO_UPDATE_STATUS="success"
+                      sharedUtils.sendEmailNotification("success","ISO VERSION UPDATED TO ${CURRENT_VERSION}")
+                    }
+            }
+        }
+    }
+
+    //We dont want to treat EXE update failure as a total failure scenario, as there might be a case where a laptop is not connected to network
+    stage('Run EXE Update in Development') {
+        when {
+            expression {
+            return CODE_CHANGE && ISO_UPDATE_STATUS == "success"
+            }
+        }
       steps {
         echo "Running EXE Update"
         script {
-          sharedUtils.installUIPrerequisites('Development')
+          //Do not need to rollback the ISO update if there are issues with EXE updates
+          def prerequisitesUpdateStatus = sharedUtils.installUIPrerequisites('Development')
+          if (prerequisitesUpdateStatus.status == "ERROR")
+          {
+            sharedUtils.sendEmailNotification("error","${prerequisitesUpdateStatus.message}")
+            error("Error in installing UI server prerequisite packages: ${prerequisitesUpdateStatus.message}")
+          }
+          else{
+            echo "Installing UI server prerequisite packages completed successfully"
+          }
+          def exeUpdateStatus = sharedUtils.performEXEUpdate('Development',CURRENT_VERSION)
+          if (exeUpdateStatus.status == "ERROR"){
+            sharedUtils.sendEmailNotification("error","${exeUpdateStatus.message}")
+            error("Error in installing EXE UI server: ${exeUpdateStatus.message}")
+          }
+          else {
+              sharedUtils.sendEmailNotification("success","EXE VERSION UPDATED TO ${CURRENT_VERSION}")
+          }
         }
 
       }
     }
-    //TODO This last stage should be executed only when both ISO and EXE update are successfull.
-    //TODO If EXE update fails then we need to rollback ISO update
-    //TODO File update with versions should not happen in case of failures
-    // stage('Update version files and cleanup old ISO files'){
-    //     when {
-    //         expression {
-    //         return !params.ROLLBACK
-    //         }
-    //     }
-    //     steps {
+
+    stage('Rollback ISO Update in Development'){
+      when {
+            expression {
+            return  params.ROLLBACK
+            }
+        }
+        steps {
+                //TODO Need to add exception handling here
+                script {
+                    def isoRollbackResult = sharedUtils.performISOUpdate('Development',ROLLBACK_VERSION)
+                    if (isoRollbackResult.status == "ERROR"){
+                      sharedUtils.sendEmailNotification("error","${isoRollbackResult.message}")
+                      error("ISO ROLLBACK ERROR: ${isoRollbackResult.message}")
+                    }
+                    else{
+                      ISO_ROLLBACK_STATUS="success"
+                      writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
+                      sharedUtils.cleanupRollbackISOFile(CURRENT_VERSION)
+                      sharedUtils.sendEmailNotification("success","ISO VERSION ROLLED BACK TO ${CURRENT_VERSION}")
+                    }
+                    
+                    
+                }
+                
+
+        }
+
+    }
+
+    stage('Rollback EXE Update in Development'){
+      when {
+            expression {
+            return  params.ROLLBACK && ISO_ROLLBACK_STATUS == "success"
+            }
+        }
+        steps {
+                //TODO Need to add exception handling here
+                script {
+                    def exeRollbackStatus = sharedUtils.performEXEUpdate('Development',ROLLBACK_VERSION)
+                    if (exeRollbackStatus.status == "ERROR"){
+                      sharedUtils.sendEmailNotification("error","${exeRollbackStatus.message}")
+                      error("Error in installing EXE UI server: ${exeRollbackStatus.message}")
+                    }
+                    else {
+                        writeFile file: env.STORED_VERSION, text: ROLLBACK_VERSION
+                        sharedUtils.sendEmailNotification("success","EXE VERSION ROLLED BACK TO ${ROLLBACK_VERSION}")
+                    }
+                }
+                
+
+        }
+
+    }
+
+    stage('Update version files and cleanup old ISO files'){
+        when {
+            expression {
+            return !params.ROLLBACK
+            }
+        }
+        steps {
             
-    //         script { 
-    //           def adjustedRollBackVersion=""
-    //           if (ROLLBACK_VERSION == "") {
-    //             echo "Rollback version is empty. Fixing it"
-    //             ROLLBACK_VERSION = CURRENT_VERSION
-    //           }
-    //           else {
-    //             echo "rollback version is not empty"
-    //             ROLLBACK_VERSION = LAST_VERSION
-    //             echo "Updated rollback version ${ROLLBACK_VERSION}"
-    //           }
-    //           writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
-    //           writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
-    //           sharedUtils.cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
-    //         }
-    //     }
-    // }
+            script { 
+              def adjustedRollBackVersion=""
+              if (ROLLBACK_VERSION == "") {
+                echo "Rollback version is empty. Fixing it"
+                ROLLBACK_VERSION = CURRENT_VERSION
+              }
+              else {
+                echo "rollback version is not empty"
+                ROLLBACK_VERSION = LAST_VERSION
+                echo "Updated rollback version ${ROLLBACK_VERSION}"
+              }
+              writeFile file: env.STORED_VERSION, text: CURRENT_VERSION
+              writeFile file: env.ROLLBACK_VERSION_FILE, text: ROLLBACK_VERSION
+              sharedUtils.cleanupOldISOFiles(CURRENT_VERSION,ROLLBACK_VERSION)
+              sharedUtils.cleanupOldExeFiles(CURRENT_VERSION,ROLLBACK_VERSION)
+            }
+        }
+    }
 }
 
-  post {
-    always {
-      archiveArtifacts artifacts: '.last_version.txt', fingerprint: true
-      archiveArtifacts artifacts: '.rollback_version.txt', fingerprint: true
-    }
-  }
+ 
 }

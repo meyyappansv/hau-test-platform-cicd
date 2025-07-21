@@ -1,0 +1,20 @@
+- name: Copy GCS artifact to remote target
+  hosts: ui
+  become: false
+
+  vars:
+    local_artifact_path: "./{{ artifact_name }}"
+    remote_exe_artifact_path: "/home/hau/HauApp"
+    folder_list:
+      - /home/hau/config
+      - /home/hau/output_files
+      - /home/hau/log
+    config_file_list:
+      - default_configs.json
+      - servers.csv
+      - parameter_template.csv
+
+  tasks:
+    - name: Simulate failure with custom message
+      ansible.builtin.fail:
+        msg: "❌ Simulated error: aborting as requested"
