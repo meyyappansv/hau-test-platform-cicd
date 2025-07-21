@@ -255,7 +255,7 @@ def performEXEUpdate(environmentName,currentVersion) {
       }
     else{
           exeUpdateCommand = """
-            ansible-playbook ui-exe-deploy.yam \
+            ansible-playbook ui-exe-deploy.yaml \
             -i hiperglobal-inventory.ini \
             --extra-vars "artifact_name=${exeFileName}" \
             --extra-vars "target_hosts=uilive" \
