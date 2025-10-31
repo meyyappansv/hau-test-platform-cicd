@@ -1,5 +1,7 @@
 def performISOUpdate(environmentName,currentVersion){
 
+  echo "Current workspace: ${env.WORKSPACE}"
+  sh "pwd"
   echo "Downloading the ISO file from GCP bucket"
   def cleanedVersion = currentVersion.replace('.', '')
   echo "CLEANED VERSION: ${cleanedVersion}"
